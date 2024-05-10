@@ -1,3 +1,4 @@
+import "dart:convert";
 import 'dart:math';
 
 import "package:logging/logging.dart";
@@ -33,8 +34,38 @@ const _promptsJson = {
   ],
 };
 
+class MagicCache {
+  final String title;
+  final List<int> fileUploadedIDs;
+  MagicCache(this.title, this.fileUploadedIDs);
+
+  factory MagicCache.fromJson(Map<String, dynamic> json) {
+    return MagicCache(
+      json['title'],
+      List<int>.from(json['fileUploadedIDs']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'fileUploadedIDs': fileUploadedIDs,
+    };
+  }
+
+  static String encodeListToJson(List<MagicCache> magicCaches) {
+    final jsonList = magicCaches.map((cache) => cache.toJson()).toList();
+    return jsonEncode(jsonList);
+  }
+
+  static List<MagicCache> decodeJsonToList(String jsonString) {
+    final jsonList = jsonDecode(jsonString) as List;
+    return jsonList.map((json) => MagicCache.fromJson(json)).toList();
+  }
+}
+
 class MagicCacheService {
-  static const _key = "magic";
+  static const _key = "magic_cache";
   late SharedPreferences prefs;
   final Logger _logger = Logger((MagicCacheService).toString());
   MagicCacheService._privateConstructor();
@@ -67,6 +98,25 @@ class MagicCacheService {
     );
 
     return {promptData["title"] as String: result};
+  }
+
+  Future<void> updateMagicCache(List<MagicCache> magicCaches) async {
+    await prefs.setString(
+      _key,
+      MagicCache.encodeListToJson(magicCaches),
+    );
+  }
+
+  Future<List<MagicCache>?> getMagicCache() async {
+    final jsonString = prefs.getString(_key);
+    if (jsonString == null) {
+      return null;
+    }
+    return MagicCache.decodeJsonToList(jsonString);
+  }
+
+  Future<void> clearMagicCache() async {
+    await prefs.remove(_key);
   }
 
   ///Generates from 0 to max unique random numbers
