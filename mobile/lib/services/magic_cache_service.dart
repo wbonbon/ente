@@ -132,6 +132,7 @@ class MagicCacheService {
   Future<List<MagicCache>?> getMagicCache() async {
     final jsonString = prefs.getString(_key);
     if (jsonString == null) {
+      _logger.info("No $_key in shared preferences");
       return null;
     }
     return MagicCache.decodeJsonToList(jsonString);
@@ -139,6 +140,40 @@ class MagicCacheService {
 
   Future<void> clearMagicCache() async {
     await prefs.remove(_key);
+  }
+
+  Future<List<GenericSearchResult>> getMagicGenericSearchResult() async {
+    final magicCaches = await getMagicCache();
+    if (magicCaches == null) {
+      _logger.info("No magic cache found");
+      return [];
+    }
+    final List<GenericSearchResult> genericSearchResults = [];
+    for (MagicCache magicCache in magicCaches) {
+      final genericSearchResult = await magicCache.toGenericSearchResult();
+      genericSearchResults.add(genericSearchResult);
+    }
+    return genericSearchResults;
+  }
+
+  Future<void> reloadMagicCaches() async {
+    _logger.info("Reloading magic caches");
+    final randomPromptsData = MagicCacheService.instance.getRandomPrompts();
+    final promptResults = <Map<String, List<int>>>[];
+    final magicCaches = <MagicCache>[];
+
+    for (var randomPromptData in randomPromptsData) {
+      promptResults.add(
+        await MagicCacheService.instance
+            .getMatchingFileIDsForPromptData(randomPromptData),
+      );
+    }
+    for (var promptResult in promptResults) {
+      magicCaches
+          .add(MagicCache(promptResult.keys.first, promptResult.values.first));
+    }
+
+    await MagicCacheService.instance.updateMagicCache(magicCaches);
   }
 
   ///Generates from 0 to max unique random numbers
@@ -153,20 +188,5 @@ class MagicCacheService {
       i++;
     }
     return numbers;
-  }
-
-  Future<List<GenericSearchResult>> getMagicGenericSearchResult() async {
-    await Future.delayed(const Duration(seconds: 10));
-    final magicCaches = await getMagicCache();
-    if (magicCaches == null) {
-      _logger.info("No magic cache found");
-      return [];
-    }
-    final List<GenericSearchResult> genericSearchResults = [];
-    for (MagicCache magicCache in magicCaches) {
-      final genericSearchResult = await magicCache.toGenericSearchResult();
-      genericSearchResults.add(genericSearchResult);
-    }
-    return genericSearchResults;
   }
 }
