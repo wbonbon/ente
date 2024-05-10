@@ -78,7 +78,7 @@ class _AllSearchSectionsState extends State<AllSearchSections> {
     final searchTypes = SectionType.values.toList(growable: true);
     // remove face and content sectionType
     searchTypes.remove(SectionType.face);
-    searchTypes.remove(SectionType.content);
+    // searchTypes.remove(SectionType.magic);
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Stack(
@@ -128,6 +128,11 @@ class _AllSearchSectionsState extends State<AllSearchSections> {
                         );
                       case SectionType.fileTypesAndExtension:
                         return FileTypeSection(
+                          snapshot.data!.elementAt(index)
+                              as List<GenericSearchResult>,
+                        );
+                      case SectionType.magic:
+                        return MomentsSection(
                           snapshot.data!.elementAt(index)
                               as List<GenericSearchResult>,
                         );

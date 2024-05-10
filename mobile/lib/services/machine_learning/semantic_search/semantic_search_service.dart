@@ -267,6 +267,48 @@ class SemanticSearchService {
     return results;
   }
 
+  Future<List<int>> getMatchingFileIDs(String query, double minScore) async {
+    final textEmbedding = await _getTextEmbedding(query);
+
+    final queryResults =
+        await _getScores(textEmbedding, scoreThreshold: minScore);
+
+    final filesMap = await FilesDB.instance.getFilesFromIDs(
+      queryResults
+          .map(
+            (e) => e.id,
+          )
+          .toList(),
+    );
+    final results = <EnteFile>[];
+
+    final ignoredCollections =
+        CollectionsService.instance.getHiddenCollectionIds();
+    final deletedEntries = <int>[];
+    for (final result in queryResults) {
+      final file = filesMap[result.id];
+      if (file != null && !ignoredCollections.contains(file.collectionID)) {
+        results.add(file);
+      }
+      if (file == null) {
+        deletedEntries.add(result.id);
+      }
+    }
+
+    _logger.info(results.length.toString() + " results");
+
+    if (deletedEntries.isNotEmpty) {
+      unawaited(EmbeddingsDB.instance.deleteEmbeddings(deletedEntries));
+    }
+
+    final matchingFileIDs = <int>[];
+    for (EnteFile file in results) {
+      matchingFileIDs.add(file.uploadedFileID!);
+    }
+
+    return matchingFileIDs;
+  }
+
   void _addToQueue(EnteFile file) {
     if (!LocalSettings.instance.hasEnabledMagicSearch()) {
       return;
@@ -355,13 +397,17 @@ class SemanticSearchService {
     }
   }
 
-  Future<List<QueryResult>> _getScores(List<double> textEmbedding) async {
+  Future<List<QueryResult>> _getScores(
+    List<double> textEmbedding, {
+    double? scoreThreshold,
+  }) async {
     final startTime = DateTime.now();
     final List<QueryResult> queryResults = await _computer.compute(
       computeBulkScore,
       param: {
         "imageEmbeddings": _cachedEmbeddings,
         "textEmbedding": textEmbedding,
+        "scoreThreshold": scoreThreshold,
       },
       taskName: "computeBulkScore",
     );
@@ -402,12 +448,14 @@ List<QueryResult> computeBulkScore(Map args) {
   final queryResults = <QueryResult>[];
   final imageEmbeddings = args["imageEmbeddings"] as List<Embedding>;
   final textEmbedding = args["textEmbedding"] as List<double>;
+  final scoreThreshold = args["scoreThreshold"] as double? ??
+      SemanticSearchService.kScoreThreshold;
   for (final imageEmbedding in imageEmbeddings) {
     final score = computeScore(
       imageEmbedding.embedding,
       textEmbedding,
     );
-    if (score >= SemanticSearchService.kScoreThreshold) {
+    if (score >= scoreThreshold) {
       queryResults.add(QueryResult(imageEmbedding.fileID, score));
     }
   }

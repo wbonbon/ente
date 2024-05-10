@@ -2,7 +2,11 @@ import "dart:convert";
 import 'dart:math';
 
 import "package:logging/logging.dart";
+import "package:photos/models/file/file.dart";
+import "package:photos/models/search/generic_search_result.dart";
+import "package:photos/models/search/search_types.dart";
 import "package:photos/services/machine_learning/semantic_search/semantic_search_service.dart";
+import "package:photos/services/search_service.dart";
 import "package:shared_preferences/shared_preferences.dart";
 
 const _promptsJson = {
@@ -61,6 +65,24 @@ class MagicCache {
   static List<MagicCache> decodeJsonToList(String jsonString) {
     final jsonList = jsonDecode(jsonString) as List;
     return jsonList.map((json) => MagicCache.fromJson(json)).toList();
+  }
+}
+
+extension MagicCacheServiceExtension on MagicCache {
+  Future<GenericSearchResult> toGenericSearchResult() async {
+    final allEnteFiles = await SearchService.instance.getAllFiles();
+    final enteFilesInMagicCache = <EnteFile>[];
+    for (EnteFile file in allEnteFiles) {
+      if (file.uploadedFileID != null &&
+          fileUploadedIDs.contains(file.uploadedFileID as int)) {
+        enteFilesInMagicCache.add(file);
+      }
+    }
+    return GenericSearchResult(
+      ResultType.magic,
+      title,
+      enteFilesInMagicCache,
+    );
   }
 }
 
@@ -131,5 +153,20 @@ class MagicCacheService {
       i++;
     }
     return numbers;
+  }
+
+  Future<List<GenericSearchResult>> getMagicGenericSearchResult() async {
+    await Future.delayed(const Duration(seconds: 10));
+    final magicCaches = await getMagicCache();
+    if (magicCaches == null) {
+      _logger.info("No magic cache found");
+      return [];
+    }
+    final List<GenericSearchResult> genericSearchResults = [];
+    for (MagicCache magicCache in magicCaches) {
+      final genericSearchResult = await magicCache.toGenericSearchResult();
+      genericSearchResults.add(genericSearchResult);
+    }
+    return genericSearchResults;
   }
 }
