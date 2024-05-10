@@ -58,13 +58,15 @@ class MagicCacheService {
     return randomPrompts;
   }
 
-  Future<List<int>> getMatchingFileIDsForPromptData(
+  Future<Map<String, List<int>>> getMatchingFileIDsForPromptData(
     Map<String, Object> promptData,
-  ) {
-    return SemanticSearchService.instance.getMatchingFileIDs(
+  ) async {
+    final result = await SemanticSearchService.instance.getMatchingFileIDs(
       promptData["prompt"] as String,
       promptData["minimumScore"] as double,
     );
+
+    return {promptData["title"] as String: result};
   }
 
   ///Generates from 0 to max unique random numbers
