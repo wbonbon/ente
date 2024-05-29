@@ -142,9 +142,18 @@ class Configuration {
       SuperLogging.setUserID(await _getOrCreateAnonymousUserID()).ignore();
     } catch (e) {
       _logger.severe("Configuration init failed", e);
-      if (e is PlatformException &&
-          (e.message ?? '').contains('BadPaddingException')) {
-        await logout(autoLogout: true);
+      if (e is PlatformException) {
+        final PlatformException exception = e as PlatformException;
+        final bool isBadPaddingError =
+            exception.toString().contains('BadPaddingException') ||
+                (exception.message ?? '').contains('BadPaddingException');
+        if (isBadPaddingError) {
+          await logout(autoLogout: true);
+        } else {
+          _logger.info(
+              'Platform error ${exception.message} with string ${exception.toString()}');
+          rethrow;
+        }
       } else {
         rethrow;
       }
