@@ -206,32 +206,52 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
   // Start workers asynchronously. No need to wait for them to start
   Computer.shared().turnOn(workersCount: 4).ignore();
   CryptoUtil.init();
+  _logger.info("Crypto init completed");
   await Configuration.instance.init();
+  _logger.info("Config init done");
   await NetworkClient.instance.init();
+  _logger.info("Network init done");
   ServiceLocator.instance.init(preferences, NetworkClient.instance.enteDio);
+  _logger.info("ServiceLocator init done");
   await UserService.instance.init();
+  _logger.info("UserService init done");
   await EntityService.instance.init();
+  _logger.info("EntityService init done");
   LocationService.instance.init(preferences);
+  _logger.info("LocationService init done");
 
   await UserRemoteFlagService.instance.init();
+  _logger.info("UserRemoteFlagService init done");
   await UpdateService.instance.init();
+  _logger.info("UpdateService init done");
   BillingService.instance.init();
+  _logger.info("BillingService init done");
   await CollectionsService.instance.init(preferences);
+  _logger.info("CollectionsService init done");
   FavoritesService.instance.initFav().ignore();
+  _logger.info("FavoritesService init done");
+
   await FileUploader.instance.init(preferences, isBackground);
+  _logger.info("FileUploader init done");
   await LocalSyncService.instance.init(preferences);
+  _logger.info("LocalSyncService init done");
   TrashSyncService.instance.init(preferences);
   RemoteSyncService.instance.init(preferences);
   await SyncService.instance.init(preferences);
   MemoriesService.instance.init(preferences);
+  _logger.info("MemoriesService init done");
   LocalSettings.instance.init(preferences);
+  _logger.info("LocalSettings init done");
   LocalFileUpdateService.instance.init(preferences);
+  _logger.info("LocalFileUpdateService init done");
   SearchService.instance.init();
   StorageBonusService.instance.init(preferences);
   RemoteFileMLService.instance.init(preferences);
+  _logger.info("RemoteFileMLService init done");
   if (!isBackground &&
       Platform.isAndroid &&
       await HomeWidgetService.instance.countHomeWidgets() == 0) {
+    _logger.info('unwaited home widget');
     unawaited(HomeWidgetService.instance.initHomeWidget());
   }
 
@@ -246,18 +266,22 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
 
   unawaited(SemanticSearchService.instance.init());
   MachineLearningController.instance.init();
+  _logger.info('MachineLearningController init done');
   if (flagService.faceSearchEnabled) {
+    _logger.info('unwaited FaceMlService started ');
     unawaited(FaceMlService.instance.init());
   } else {
     if (LocalSettings.instance.isFaceIndexingEnabled) {
       unawaited(LocalSettings.instance.toggleFaceIndexing());
     }
   }
+  _logger.info("Starting person init");
   PersonService.init(
     EntityService.instance,
     FaceMLDataDB.instance,
     preferences,
   );
+  _logger.info("completed person init");
 
   initComplete = true;
   _logger.info("Initialization done");
