@@ -99,7 +99,9 @@ class Configuration {
   Future<void> init() async {
     try {
       _preferences = await SharedPreferences.getInstance();
-      _secureStorage = const FlutterSecureStorage();
+      _secureStorage = const FlutterSecureStorage(
+        aOptions: AndroidOptions(resetOnError: true),
+      );
       _documentsDirectory = (await getApplicationDocumentsDirectory()).path;
       _tempDocumentsDirPath = _documentsDirectory + "/temp/";
       final tempDocumentsDir = Directory(_tempDocumentsDirPath);
