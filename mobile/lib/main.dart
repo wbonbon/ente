@@ -207,7 +207,11 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
   Computer.shared().turnOn(workersCount: 4).ignore();
   CryptoUtil.init();
   _logger.info("Crypto init completed");
-  await Configuration.instance.init();
+  try {
+    await Configuration.instance.init();
+  } catch (e, s) {
+    _logger.severe("Configuration init failed", e, s);
+  }
   _logger.info("Config init done");
   await NetworkClient.instance.init();
   _logger.info("Network init done");

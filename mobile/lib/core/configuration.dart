@@ -143,7 +143,7 @@ class Configuration {
     } catch (e) {
       _logger.severe("Configuration init failed", e);
       if (e is PlatformException) {
-        final PlatformException exception = e as PlatformException;
+        final PlatformException exception = e;
         final bool isBadPaddingError =
             exception.toString().contains('BadPaddingException') ||
                 (exception.message ?? '').contains('BadPaddingException');
@@ -213,18 +213,17 @@ class Configuration {
     _cachedToken = null;
     _secretKey = null;
     await FilesDB.instance.clearTable();
-    SemanticSearchService.instance.hasInitialized
-        ? await EmbeddingsDB.instance.clearTable()
-        : null;
     await CollectionsDB.instance.clearTable();
     await MemoriesDB.instance.clearTable();
     await FaceMLDataDB.instance.clearTable();
-
     await UploadLocksDB.instance.clearTable();
     await IgnoredFilesService.instance.reset();
     await TrashDB.instance.clearTable();
-    FileUploader.instance.clearCachedUploadURLs();
     if (!autoLogout) {
+      SemanticSearchService.instance.hasInitialized
+          ? await EmbeddingsDB.instance.clearTable()
+          : null;
+      FileUploader.instance.clearCachedUploadURLs();
       CollectionsService.instance.clearCache();
       FavoritesService.instance.clearCache();
       MemoriesService.instance.clearCache();
