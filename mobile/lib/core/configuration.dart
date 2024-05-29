@@ -1,9 +1,9 @@
 import "dart:async";
 import 'dart:convert';
 import "dart:io";
-import 'dart:typed_data';
 
 import 'package:bip39/bip39.dart' as bip39;
+import "package:flutter/services.dart";
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
@@ -99,9 +99,7 @@ class Configuration {
   Future<void> init() async {
     try {
       _preferences = await SharedPreferences.getInstance();
-      _secureStorage = const FlutterSecureStorage(
-        aOptions: AndroidOptions(resetOnError: true),
-      );
+      _secureStorage = const FlutterSecureStorage();
       _documentsDirectory = (await getApplicationDocumentsDirectory()).path;
       _tempDocumentsDirPath = _documentsDirectory + "/temp/";
       final tempDocumentsDir = Directory(_tempDocumentsDirPath);
@@ -144,7 +142,12 @@ class Configuration {
       SuperLogging.setUserID(await _getOrCreateAnonymousUserID()).ignore();
     } catch (e) {
       _logger.severe("Configuration init failed", e);
-      rethrow;
+      if (e is PlatformException &&
+          (e.message ?? '').contains('BadPaddingException')) {
+        await logout(autoLogout: true);
+      } else {
+        rethrow;
+      }
     }
   }
 
