@@ -97,37 +97,53 @@ class Configuration {
   );
 
   Future<void> init() async {
-    _preferences = await SharedPreferences.getInstance();
-    _secureStorage = const FlutterSecureStorage();
-    _documentsDirectory = (await getApplicationDocumentsDirectory()).path;
-    _tempDocumentsDirPath = _documentsDirectory + "/temp/";
-    final tempDocumentsDir = Directory(_tempDocumentsDirPath);
-    await _cleanUpStaleFiles(tempDocumentsDir);
-    tempDocumentsDir.createSync(recursive: true);
-    final tempDirectoryPath = (await getTemporaryDirectory()).path;
-    _thumbnailCacheDirectory = tempDirectoryPath + "/thumbnail-cache";
-    Directory(_thumbnailCacheDirectory).createSync(recursive: true);
-    _sharedTempMediaDirectory = tempDirectoryPath + "/ente-shared-media";
-    Directory(_sharedTempMediaDirectory).createSync(recursive: true);
-    _sharedDocumentsMediaDirectory = _documentsDirectory + "/ente-shared-media";
-    Directory(_sharedDocumentsMediaDirectory).createSync(recursive: true);
-    if (!_preferences.containsKey(tokenKey)) {
-      await _secureStorage.deleteAll(iOptions: _secureStorageOptionsIOS);
-    } else {
-      _key = await _secureStorage.read(
-        key: keyKey,
-        iOptions: _secureStorageOptionsIOS,
-      );
-      _secretKey = await _secureStorage.read(
-        key: secretKeyKey,
-        iOptions: _secureStorageOptionsIOS,
-      );
-      if (_key == null) {
-        await logout(autoLogout: true);
+    try {
+      _preferences = await SharedPreferences.getInstance();
+      _secureStorage = const FlutterSecureStorage();
+      _documentsDirectory = (await getApplicationDocumentsDirectory()).path;
+      _tempDocumentsDirPath = _documentsDirectory + "/temp/";
+      final tempDocumentsDir = Directory(_tempDocumentsDirPath);
+      await _cleanUpStaleFiles(tempDocumentsDir);
+      _logger.info('creating tempDocumentsDir');
+      tempDocumentsDir.createSync(recursive: true);
+      _logger.info('get tempDirectoryPath');
+      final tempDirectoryPath = (await getTemporaryDirectory()).path;
+      _thumbnailCacheDirectory = tempDirectoryPath + "/thumbnail-cache";
+      _logger.info('creating _thumbnailCacheDirectory');
+      Directory(_thumbnailCacheDirectory).createSync(recursive: true);
+      _sharedTempMediaDirectory = tempDirectoryPath + "/ente-shared-media";
+      _logger.info('creating _sharedTempMediaDirectory');
+      Directory(_sharedTempMediaDirectory).createSync(recursive: true);
+      _sharedDocumentsMediaDirectory =
+          _documentsDirectory + "/ente-shared-media";
+      _logger.info('creating _sharedDocumentsMediaDirectory');
+      Directory(_sharedDocumentsMediaDirectory).createSync(recursive: true);
+      if (!_preferences.containsKey(tokenKey)) {
+        _logger.info('no token, delete all secure stroage');
+        await _secureStorage.deleteAll(iOptions: _secureStorageOptionsIOS);
+      } else {
+        _logger.info('reading key from secure storage');
+        _key = await _secureStorage.read(
+          key: keyKey,
+          iOptions: _secureStorageOptionsIOS,
+        );
+        _logger.info('reading secretKey from secure storage');
+        _secretKey = await _secureStorage.read(
+          key: secretKeyKey,
+          iOptions: _secureStorageOptionsIOS,
+        );
+
+        if (_key == null) {
+          _logger.info('key null, should logout');
+          await logout(autoLogout: true);
+        }
+        await _migrateSecurityStorageToFirstUnlock();
       }
-      await _migrateSecurityStorageToFirstUnlock();
+      SuperLogging.setUserID(await _getOrCreateAnonymousUserID()).ignore();
+    } catch (e) {
+      _logger.severe("Configuration init failed", e);
+      rethrow;
     }
-    SuperLogging.setUserID(await _getOrCreateAnonymousUserID()).ignore();
   }
 
   // _cleanUpStaleFiles deletes all files in the temp directory that are older
@@ -641,16 +657,19 @@ class Configuration {
     final hasMigratedSecureStorage =
         _preferences.getBool(hasMigratedSecureStorageKey) ?? false;
     if (!hasMigratedSecureStorage && _key != null && _secretKey != null) {
+      _logger.info('migrating key');
       await _secureStorage.write(
         key: keyKey,
         value: _key,
         iOptions: _secureStorageOptionsIOS,
       );
+      _logger.info('migrating secure key');
       await _secureStorage.write(
         key: secretKeyKey,
         value: _secretKey,
         iOptions: _secureStorageOptionsIOS,
       );
+      _logger.info('migration done');
       await _preferences.setBool(
         hasMigratedSecureStorageKey,
         true,
