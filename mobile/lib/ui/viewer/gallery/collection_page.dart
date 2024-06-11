@@ -5,6 +5,7 @@ import 'package:photos/db/files_db.dart';
 import "package:photos/events/collection_meta_event.dart";
 import 'package:photos/events/collection_updated_event.dart';
 import 'package:photos/events/files_updated_event.dart';
+import "package:photos/events/filter_updated_event.dart";
 import 'package:photos/models/collection/collection_items.dart';
 import 'package:photos/models/file/file.dart';
 import 'package:photos/models/file_load_result.dart';
@@ -76,6 +77,9 @@ class CollectionPage extends StatelessWidget {
               (event) =>
                   event.id == c.collection.id &&
                   event.type == CollectionMetaEventType.sortChanged,
+            ),
+        Bus.instance.on<FilterUpdatedEvent>().where(
+              (event) => event.contextKey == filterContextKey,
             ),
       ],
       removalEventTypes: const {
