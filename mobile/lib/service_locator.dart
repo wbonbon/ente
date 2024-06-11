@@ -36,4 +36,4 @@ CastService get castService {
   return _castService!;
 }
 
-FiltersContextState filtersContextState = FiltersContextState();
+FiltersContextState filtersContextState = FiltersContextState.instance;

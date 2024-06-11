@@ -11,6 +11,7 @@ import 'package:photos/events/tab_changed_event.dart';
 import 'package:photos/models/file/file.dart';
 import 'package:photos/models/file_load_result.dart';
 import 'package:photos/models/selected_files.dart';
+import "package:photos/service_locator.dart";
 import 'package:photos/ui/common/loading_widget.dart';
 import "package:photos/ui/viewer/gallery/component/group/type.dart";
 import "package:photos/ui/viewer/gallery/component/multiple_groups_gallery_view.dart";
@@ -36,6 +37,7 @@ class Gallery extends StatefulWidget {
   final Set<EventType> removalEventTypes;
   final SelectedFiles? selectedFiles;
   final String tagPrefix;
+  final String? filterContextKey;
   final Widget? header;
   final Widget? footer;
   final Widget emptyState;
@@ -64,6 +66,7 @@ class Gallery extends StatefulWidget {
   const Gallery({
     required this.asyncLoader,
     required this.tagPrefix,
+    this.filterContextKey,
     this.selectedFiles,
     this.initialFiles,
     this.reloadEvent,
@@ -104,6 +107,7 @@ class GalleryState extends State<Gallery> {
   late ItemScrollController _itemScroller;
   StreamSubscription<FilesUpdatedEvent>? _reloadEventSubscription;
   StreamSubscription<TabDoubleTapEvent>? _tabDoubleTapEvent;
+
   final _forceReloadEventSubscriptions = <StreamSubscription<Event>>[];
   late String _logTag;
   bool _sortOrderAsc = false;
@@ -115,6 +119,9 @@ class GalleryState extends State<Gallery> {
         "Gallery_${widget.tagPrefix}${kDebugMode ? "_" + widget.albumName! : ""}";
     _logger = Logger(_logTag);
     _logger.finest("init Gallery");
+    if (widget.filterContextKey != null) {
+      filtersContextState.registerContext(widget.filterContextKey!);
+    }
     _debouncer = Debouncer(
       widget.reloadDebounceTime,
       executionInterval: widget.reloadDebounceExecutionInterval,
@@ -212,7 +219,16 @@ class GalleryState extends State<Gallery> {
 
   // group files into multiple groups and returns `true` if it resulted in a
   // gallery reload
-  bool _onFilesLoaded(List<EnteFile> files) {
+  bool _onFilesLoaded(List<EnteFile> dbFiles) {
+    late List<EnteFile> files;
+    if (widget.filterContextKey == null ||
+        !filtersContextState.hasActiveFilters(widget.filterContextKey!)) {
+      files = dbFiles;
+    } else {
+      files =
+          filtersContextState.filterFiles(widget.filterContextKey!, dbFiles);
+    }
+
     final updatedGroupedFiles =
         widget.enableFileGrouping && widget.groupType.timeGrouping()
             ? _groupBasedOnTime(files)
@@ -234,6 +250,9 @@ class GalleryState extends State<Gallery> {
 
   @override
   void dispose() {
+    if (widget.filterContextKey != null) {
+      filtersContextState.unregisterContext(widget.filterContextKey!);
+    }
     _reloadEventSubscription?.cancel();
     _tabDoubleTapEvent?.cancel();
     for (final subscription in _forceReloadEventSubscriptions) {

@@ -25,6 +25,7 @@ import 'package:photos/services/collections_service.dart';
 import 'package:photos/services/sync_service.dart';
 import 'package:photos/services/update_service.dart';
 import 'package:photos/ui/actions/collection/collection_sharing_actions.dart';
+import "package:photos/ui/actions/filters/filter_options.dart";
 import "package:photos/ui/cast/auto.dart";
 import "package:photos/ui/cast/choose.dart";
 import "package:photos/ui/common/popup_item.dart";
@@ -52,6 +53,7 @@ class GalleryAppBarWidget extends StatefulWidget {
   final SelectedFiles selectedFiles;
   final DeviceCollection? deviceCollection;
   final Collection? collection;
+  final String? filterContextKey;
 
   const GalleryAppBarWidget(
     this.type,
@@ -59,6 +61,7 @@ class GalleryAppBarWidget extends StatefulWidget {
     this.selectedFiles, {
     Key? key,
     this.deviceCollection,
+    this.filterContextKey,
     this.collection,
   }) : super(key: key);
 
@@ -82,6 +85,7 @@ enum AlbumPopupAction {
   pinAlbum,
   removeLink,
   cleanUncategorized,
+  filter,
 }
 
 class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
@@ -421,6 +425,13 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
             context.l10n.playOnTv,
             icon: Icons.tv_outlined,
           ),
+        if (widget.filterContextKey != null)
+          EntePopupMenuItem(
+            value: AlbumPopupAction.filter,
+            "Filter",
+            icon: Icons.filter_list_outlined,
+          ),
+
         if (galleryType.canDelete())
           EntePopupMenuItem(
             isQuickLink ? S.of(context).removeLink : S.of(context).deleteAlbum,
@@ -483,6 +494,8 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
               await _leaveAlbum(context);
             } else if (value == AlbumPopupAction.playOnTv) {
               await _castChoiceDialog();
+            } else if (value == AlbumPopupAction.filter) {
+              await showFilterSheet(context, widget.filterContextKey!);
             } else if (value == AlbumPopupAction.freeUpSpace) {
               await _deleteBackedUpFiles(context);
             } else if (value == AlbumPopupAction.setCover) {

@@ -1,4 +1,6 @@
 import "package:flutter/foundation.dart";
+import "package:photos/core/event_bus.dart";
+import "package:photos/events/filter_updated_event.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/gallery_type.dart";
 import "package:photos/services/filter/filter.dart";
@@ -10,12 +12,11 @@ class ActiveFilters {
 
 class FiltersContextState {
   Map<String, ActiveFilters> keyToActiveFiles = {};
+
   // static instance
   static final FiltersContextState _instance = FiltersContextState();
 
-  factory FiltersContextState() {
-    return _instance;
-  }
+  static FiltersContextState get instance => _instance;
 
   void registerContext(String contextKey) {
     if (keyToActiveFiles.containsKey(contextKey)) {
@@ -49,5 +50,30 @@ class FiltersContextState {
       key = galleryType.name;
     }
     return key;
+  }
+
+  List<EnteFile> filterFiles(String s, List<EnteFile> dbFiles) {
+    final activeFilters = getActiveFilters(s);
+    if (activeFilters.filters.isEmpty) {
+      return dbFiles;
+    }
+    final result = <EnteFile>[];
+    for (final file in dbFiles) {
+      bool shouldAdd = true;
+      for (final filter in activeFilters.filters) {
+        if (!filter.filter(file)) {
+          shouldAdd = false;
+          break;
+        }
+      }
+      if (shouldAdd) {
+        result.add(file);
+      }
+    }
+    return result;
+  }
+
+  void notifyFilterUpdated(String contextKey) {
+    Bus.instance.fire(FilterUpdatedEvent(contextKey));
   }
 }

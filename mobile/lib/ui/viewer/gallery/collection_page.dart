@@ -10,6 +10,7 @@ import 'package:photos/models/file/file.dart';
 import 'package:photos/models/file_load_result.dart';
 import 'package:photos/models/gallery_type.dart';
 import 'package:photos/models/selected_files.dart';
+import "package:photos/service_locator.dart";
 import 'package:photos/services/ignored_files_service.dart';
 import 'package:photos/ui/viewer/actions/file_selection_overlay_bar.dart';
 import "package:photos/ui/viewer/gallery/empty_album_state.dart";
@@ -36,6 +37,10 @@ class CollectionPage extends StatelessWidget {
     if (hasVerifiedLock == false && c.collection.isHidden()) {
       return const EmptyState();
     }
+    final String filterContextKey = filtersContextState.buildKey(
+      getGalleryType(c.collection, Configuration.instance.getUserID()!),
+      collectionID: c.collection.id,
+    );
 
     final galleryType = getGalleryType(
       c.collection,
@@ -79,6 +84,7 @@ class CollectionPage extends StatelessWidget {
         EventType.hide,
       },
       tagPrefix: tagPrefix,
+      filterContextKey: filterContextKey,
       selectedFiles: _selectedFiles,
       initialFiles: initialFiles,
       albumName: c.collection.displayName,
@@ -96,6 +102,7 @@ class CollectionPage extends StatelessWidget {
           c.collection.displayName,
           _selectedFiles,
           collection: c.collection,
+          filterContextKey: filterContextKey,
         ),
       ),
       body: Stack(
