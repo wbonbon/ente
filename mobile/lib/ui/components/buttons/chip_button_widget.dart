@@ -7,9 +7,11 @@ class ChipButtonWidget extends StatelessWidget {
   final IconData? leadingIcon;
   final VoidCallback? onTap;
   final bool noChips;
+  final Color? boxColor;
   const ChipButtonWidget(
     this.label, {
     this.leadingIcon,
+    this.boxColor,
     this.onTap,
     this.noChips = false,
     super.key,
@@ -22,7 +24,7 @@ class ChipButtonWidget extends StatelessWidget {
       child: Container(
         width: noChips ? double.infinity : null,
         decoration: BoxDecoration(
-          color: getEnteColorScheme(context).fillFaint,
+          color: boxColor ?? getEnteColorScheme(context).fillFaint,
           borderRadius: const BorderRadius.all(Radius.circular(4)),
         ),
         child: Padding(
