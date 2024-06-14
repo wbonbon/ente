@@ -351,7 +351,7 @@ class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
           trailingIconIsMuted: true,
           onTap: () async {
             try {
-              final String greetings = greet("", name: "Tom");
+              final String greetings = greet(name: "Tom");
               const String expected = "Hello, Tom!";
               assert(greetings == expected);
               debugPrint("String from rust: $greetings");
