@@ -47,6 +47,7 @@ import 'package:photos/services/trash_sync_service.dart';
 import 'package:photos/services/update_service.dart';
 import 'package:photos/services/user_remote_flag_service.dart';
 import 'package:photos/services/user_service.dart';
+import "package:photos/src/rust/frb_generated.dart";
 import 'package:photos/ui/tools/app_lock.dart';
 import 'package:photos/ui/tools/lock_screen.dart';
 import 'package:photos/utils/crypto_util.dart';
@@ -72,6 +73,7 @@ void main() async {
   debugRepaintRainbowEnabled = false;
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
+  await RustLib.init();
 
   final savedThemeMode = await AdaptiveTheme.getThemeMode();
   await _runInForeground(savedThemeMode);
