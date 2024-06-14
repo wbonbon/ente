@@ -117,26 +117,25 @@ class RemoteFileMLService {
       },
     );
   }
-
 }
 
 Future<Map<int, FileMl>> _decryptFileMLComputer(
-    Map<String, dynamic> args,
-  ) async {
-    final result = <int, FileMl>{};
-    final inputs = args["inputs"] as List<EmbeddingsDecoderInput>;
-    for (final input in inputs) {
-      final decryptArgs = <String, dynamic>{};
-      decryptArgs["source"] =
-          CryptoUtil.base642bin(input.embedding.encryptedEmbedding);
-      decryptArgs["key"] = input.decryptionKey;
-      decryptArgs["header"] =
-          CryptoUtil.base642bin(input.embedding.decryptionHeader);
-      final embeddingData = chachaDecryptData(decryptArgs);
-      final decodedJson = jsonDecode(utf8.decode(embeddingData));
-      final FileMl decodedEmbedding =
-          FileMl.fromJson(decodedJson as Map<String, dynamic>);
-      result[input.embedding.fileID] = decodedEmbedding;
-    }
-    return result;
+  Map<String, dynamic> args,
+) async {
+  final result = <int, FileMl>{};
+  final inputs = args["inputs"] as List<EmbeddingsDecoderInput>;
+  for (final input in inputs) {
+    final decryptArgs = <String, dynamic>{};
+    decryptArgs["source"] =
+        CryptoUtil.base642bin(input.embedding.encryptedEmbedding);
+    decryptArgs["key"] = input.decryptionKey;
+    decryptArgs["header"] =
+        CryptoUtil.base642bin(input.embedding.decryptionHeader);
+    final embeddingData = chachaDecryptData(decryptArgs);
+    final decodedJson = jsonDecode(utf8.decode(embeddingData));
+    final FileMl decodedEmbedding =
+        FileMl.fromJson(decodedJson as Map<String, dynamic>);
+    result[input.embedding.fileID] = decodedEmbedding;
   }
+  return result;
+}

@@ -57,7 +57,8 @@ class _ClusterPageState extends State<ClusterPage> {
   late final StreamSubscription<LocalPhotosUpdatedEvent> _filesUpdatedEvent;
   late final StreamSubscription<PeopleChangedEvent> _peopleChangedEvent;
 
-  bool get showNamingBanner => (!userDismissedNamingBanner && widget.showNamingBanner);
+  bool get showNamingBanner =>
+      (!userDismissedNamingBanner && widget.showNamingBanner);
 
   bool userDismissedNamingBanner = false;
 
@@ -66,7 +67,8 @@ class _ClusterPageState extends State<ClusterPage> {
     super.initState();
     ClusterFeedbackService.setLastViewedClusterID(widget.clusterID);
     files = widget.searchResult;
-    _filesUpdatedEvent = Bus.instance.on<LocalPhotosUpdatedEvent>().listen((event) {
+    _filesUpdatedEvent =
+        Bus.instance.on<LocalPhotosUpdatedEvent>().listen((event) {
       if (event.type == EventType.deletedFromDevice ||
           event.type == EventType.deletedFromEverywhere ||
           event.type == EventType.deletedFromRemote ||
@@ -111,7 +113,8 @@ class _ClusterPageState extends State<ClusterPage> {
         final result = files
             .where(
               (file) =>
-                  file.creationTime! >= creationStartTime && file.creationTime! <= creationEndTime,
+                  file.creationTime! >= creationStartTime &&
+                  file.creationTime! <= creationEndTime,
             )
             .toList();
         return Future.value(
@@ -185,7 +188,8 @@ class _ClusterPageState extends State<ClusterPage> {
                             context,
                             clusterID: widget.clusterID,
                           );
-                          if (result != null && result is (PersonEntity, EnteFile)) {
+                          if (result != null &&
+                              result is (PersonEntity, EnteFile)) {
                             Navigator.pop(context);
                             // ignore: unawaited_futures
                             routeToPage(context, PeoplePage(person: result.$1));

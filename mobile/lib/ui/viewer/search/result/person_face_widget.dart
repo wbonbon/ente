@@ -188,7 +188,7 @@ class PersonFaceWidget extends StatelessWidget {
         stackTrace: s,
       );
       resetPool(fullFile: useFullFile);
-      if(fetchAttempt <= retryLimit) {
+      if (fetchAttempt <= retryLimit) {
         return getFaceCrop(fetchAttempt: fetchAttempt + 1);
       }
       return null;

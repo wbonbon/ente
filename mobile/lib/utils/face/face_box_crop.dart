@@ -13,9 +13,11 @@ import "package:pool/pool.dart";
 
 void resetPool({required bool fullFile}) {
   if (fullFile) {
-    poolFullFileFaceGenerations = Pool(20, timeout: const Duration(seconds: 15));
+    poolFullFileFaceGenerations =
+        Pool(20, timeout: const Duration(seconds: 15));
   } else {
-    poolThumbnailFaceGenerations = Pool(100, timeout: const Duration(seconds: 15));
+    poolThumbnailFaceGenerations =
+        Pool(100, timeout: const Duration(seconds: 15));
   }
 }
 

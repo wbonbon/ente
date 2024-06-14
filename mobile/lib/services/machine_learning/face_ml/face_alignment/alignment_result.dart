@@ -4,7 +4,12 @@ class AlignmentResult {
   final double size; // 1 / scale
   final double rotation; // atan2(simRotation[1][0], simRotation[0][0]);
 
-  AlignmentResult({required this.affineMatrix, required this.center, required this.size, required this.rotation});
+  AlignmentResult({
+    required this.affineMatrix,
+    required this.center,
+    required this.size,
+    required this.rotation,
+  });
 
   AlignmentResult.empty()
       : affineMatrix = <List<double>>[

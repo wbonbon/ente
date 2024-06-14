@@ -38,7 +38,7 @@ class MachineLearningController {
           .listen((IosBatteryInfo? batteryInfo) {
         _oniOSBatteryStateUpdate(batteryInfo);
       });
-    } 
+    }
     if (Platform.isAndroid) {
       BatteryInfoPlugin()
           .androidBatteryInfoStream

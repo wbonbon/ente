@@ -64,8 +64,7 @@ class FaceEmbeddings {
         json['faces'].map((x) => Face.fromJson(x as Map<String, dynamic>)),
       ),
       json['version'] as int,
-      client: json['client'] ??
-      'unknown',
+      client: json['client'] ?? 'unknown',
     );
   }
 }

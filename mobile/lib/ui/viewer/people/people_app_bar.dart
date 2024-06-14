@@ -67,7 +67,8 @@ class _AppBarWidgetState extends State<PeopleAppBar> {
     };
     collectionActions = CollectionActions(CollectionsService.instance);
     widget.selectedFiles.addListener(_selectedFilesListener);
-    _userAuthEventSubscription = Bus.instance.on<SubscriptionPurchasedEvent>().listen((event) {
+    _userAuthEventSubscription =
+        Bus.instance.on<SubscriptionPurchasedEvent>().listen((event) {
       setState(() {});
     });
     _appBarTitle = widget.title;
@@ -88,7 +89,8 @@ class _AppBarWidgetState extends State<PeopleAppBar> {
       centerTitle: false,
       title: Text(
         _appBarTitle!,
-        style: Theme.of(context).textTheme.headlineSmall!.copyWith(fontSize: 16),
+        style:
+            Theme.of(context).textTheme.headlineSmall!.copyWith(fontSize: 16),
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),
@@ -112,7 +114,8 @@ class _AppBarWidgetState extends State<PeopleAppBar> {
         }
 
         try {
-          await PersonService.instance.updateAttributes(widget.person.remoteID, name: text);
+          await PersonService.instance
+              .updateAttributes(widget.person.remoteID, name: text);
           if (mounted) {
             _appBarTitle = text;
             setState(() {});
@@ -132,7 +135,8 @@ class _AppBarWidgetState extends State<PeopleAppBar> {
   List<Widget> _getDefaultActions(BuildContext context) {
     final List<Widget> actions = <Widget>[];
     // If the user has selected files, don't show any actions
-    if (widget.selectedFiles.files.isNotEmpty || !Configuration.instance.hasConfiguredAccount()) {
+    if (widget.selectedFiles.files.isNotEmpty ||
+        !Configuration.instance.hasConfiguredAccount()) {
       return actions;
     }
 
@@ -223,7 +227,8 @@ class _AppBarWidgetState extends State<PeopleAppBar> {
               unawaited(
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => PersonReviewClusterSuggestion(widget.person),
+                    builder: (context) =>
+                        PersonReviewClusterSuggestion(widget.person),
                   ),
                 ),
               );
@@ -266,11 +271,13 @@ class _AppBarWidgetState extends State<PeopleAppBar> {
     bool assignName = false;
     await showChoiceDialog(
       context,
-      title: "Are you sure you want to show this person in people section again?",
+      title:
+          "Are you sure you want to show this person in people section again?",
       firstButtonLabel: "Yes, show person",
       firstButtonOnTap: () async {
         try {
-          await PersonService.instance.deletePerson(widget.person.remoteID, onlyMapping: false);
+          await PersonService.instance
+              .deletePerson(widget.person.remoteID, onlyMapping: false);
           Bus.instance.fire(PeopleChangedEvent());
           assignName = true;
         } catch (e, s) {

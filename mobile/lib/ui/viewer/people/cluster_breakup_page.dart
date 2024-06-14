@@ -56,7 +56,8 @@ class _ClusterBreakupPageState extends State<ClusterBreakupPage> {
                     child: files.isNotEmpty
                         ? ClipRRect(
                             borderRadius: const BorderRadius.all(
-                                Radius.elliptical(16, 12),),
+                              Radius.elliptical(16, 12),
+                            ),
                             child: PersonFaceWidget(
                               files.first,
                               clusterID: clusterID,

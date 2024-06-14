@@ -18,11 +18,12 @@ class Face {
   Detection detection;
   final double score;
   final double blur;
- 
+
   ///#region Local DB fields
   // This is not stored on the server, using it for local DB row
   FileInfo? fileInfo;
   final int fileID;
+
   ///#endregion
 
   bool get isBlurry => blur < kLaplacianHardThreshold;

@@ -202,9 +202,9 @@ class _FreeUpSpaceOptionsScreenState extends State<FreeUpSpaceOptionsScreen> {
                                   onTap: () async {
                                     await routeToPage(
                                       context,
-                                    LargeFilesPagePage(),
+                                      LargeFilesPagePage(),
                                     );
-                                    },
+                                  },
                                 ),
                                 MenuSectionDescriptionWidget(
                                   content: S.of(context).viewLargeFilesDesc,
