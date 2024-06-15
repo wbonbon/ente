@@ -10,6 +10,7 @@ import "package:photos/face/model/person.dart";
 import 'package:photos/services/machine_learning/face_ml/face_ml_service.dart';
 import "package:photos/services/machine_learning/face_ml/feedback/cluster_feedback.dart";
 import "package:photos/services/machine_learning/face_ml/person/person_service.dart";
+import "package:photos/services/machine_learning/vector_db/vector_db.dart";
 import "package:photos/src/rust/api/simple.dart";
 import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/components/captioned_text_widget.dart';
@@ -356,6 +357,30 @@ class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
               assert(greetings == expected);
               debugPrint("String from rust: $greetings");
               showShortToast(context, greetings);
+            } catch (e, s) {
+              _logger.warning('Rust bridge failed ', e, s);
+              await showGenericErrorDialog(context: context, error: e);
+            }
+          },
+        ),
+        MenuItemWidget(
+          captionedTextWidget: const CaptionedTextWidget(
+            title: "VectorDB status",
+          ),
+          pressedColor: getEnteColorScheme(context).fillFaint,
+          trailingIcon: Icons.chevron_right_outlined,
+          trailingIconIsMuted: true,
+          onTap: () async {
+            try {
+              final status =
+                  await VectorDB.instance.getIndexStatus(VectorTable.faces);
+              final size = status.$1;
+              final capacity = status.$2;
+              final dimensions = status.$3;
+              showShortToast(
+                context,
+                "Size: $size, Capacity: $capacity, Dimensions: $dimensions",
+              );
             } catch (e, s) {
               _logger.warning('Rust bridge failed ', e, s);
               await showGenericErrorDialog(context: context, error: e);
