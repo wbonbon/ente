@@ -377,9 +377,16 @@ class _FaceDebugSectionWidgetState extends State<FaceDebugSectionWidget> {
               final size = status.$1;
               final capacity = status.$2;
               final dimensions = status.$3;
+              final int totalFaces =
+                  await FaceMLDataDB.instance.getTotalFaceCount();
               showShortToast(
                 context,
                 "Size: $size, Capacity: $capacity, Dimensions: $dimensions",
+              );
+              await Future.delayed(const Duration(seconds: 4));
+              showShortToast(
+                context,
+                "Total faces in regular DB: $totalFaces",
               );
             } catch (e, s) {
               _logger.warning('Rust bridge failed ', e, s);
