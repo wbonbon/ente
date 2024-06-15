@@ -14,6 +14,7 @@ import "package:photos/models/file/file.dart";
 import "package:photos/services/machine_learning/face_ml/face_clustering/face_info_for_clustering.dart";
 import 'package:photos/services/machine_learning/face_ml/face_filtering/face_filtering_constants.dart';
 import "package:photos/services/machine_learning/face_ml/face_ml_result.dart";
+import "package:photos/services/machine_learning/vector_db/vector_db.dart";
 import "package:photos/utils/ml_util.dart";
 import 'package:sqlite_async/sqlite_async.dart';
 
@@ -42,6 +43,7 @@ class FaceMLDataDB {
     createClusterSummaryTable,
     createNotPersonFeedbackTable,
     fcClusterIDIndex,
+    createFaceEmbeddingsTable,
   ];
 
   // only have a single app-wide reference to the database
@@ -104,6 +106,8 @@ class FaceMLDataDB {
     final db = await instance.asyncDB;
     const batchSize = 500;
     final numBatches = (faces.length / batchSize).ceil();
+    final List<int> keys = [];
+    final List<List<double>> vectors = [];
     for (int i = 0; i < numBatches; i++) {
       final start = i * batchSize;
       final end = min((i + 1) * batchSize, faces.length);
@@ -132,7 +136,32 @@ class FaceMLDataDB {
       }).toList();
 
       await db.executeBatch(sql, parameterSets);
+
+      // Insert into createFaceEmbeddingsTable
+      final List<List<dynamic>> faceEmbeddings = [];
+      final startKey = DateTime.now().microsecondsSinceEpoch;
+      for (int j = 0; j < batch.length; j++) {
+        final score = batch[j].score;
+        if (score < kMinimumQualityFaceScore) {
+          continue;
+        }
+        final faceId = batch[j];
+        final key = startKey + j + i * batchSize;
+        final vector = batch[j].embedding;
+        faceEmbeddings.add([faceId, key]);
+        keys.add(key);
+        vectors.add(vector);
+      }
+
+      const String sqlFaceEmbeddings = '''
+        INSERT INTO $faceEmbeddingsTable ($feFaceId, $feEmbeddingKey)
+        VALUES (?, ?)
+        ON CONFLICT($feFaceId, $feEmbeddingKey) DO UPDATE SET $feFaceId = excluded.$feFaceId, $feEmbeddingKey = excluded.$feEmbeddingKey
+      ''';
+      await db.executeBatch(sqlFaceEmbeddings, faceEmbeddings);
     }
+    // Insert into VectorDB
+    await VectorDB.instance.bulkAddVectors(VectorTable.faces, keys, vectors);
   }
 
   Future<void> updateFaceIdToClusterId(
@@ -994,6 +1023,8 @@ class FaceMLDataDB {
         await db.execute(deleteFaceClustersTable);
         await db.execute(createFaceClustersTable);
         await db.execute(fcClusterIDIndex);
+        await db.execute(deleteFaceEmbeddingsTable);
+        await VectorDB.instance.resetIndex(VectorTable.faces);
       }
 
       await db.execute(deleteClusterPersonTable);

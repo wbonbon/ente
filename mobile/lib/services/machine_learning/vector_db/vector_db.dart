@@ -11,8 +11,8 @@ import "package:photos/extensions/stop_watch.dart" show EnteWatch;
 import "package:photos/src/rust/api/usearch_api.dart" as rust;
 import "package:synchronized/synchronized.dart" show Lock;
 
-enum VectorDbTable {
-  faceMl,
+enum VectorTable {
+  faces,
   clip,
 }
 
@@ -24,45 +24,45 @@ class VectorDB {
 
   final _computer = Computer.shared();
 
-  final Map<VectorDbTable, String> _tablePaths = {};
+  final Map<VectorTable, String> _tablePaths = {};
 
   // Singleton pattern
   VectorDB._privateConstructor();
   static final instance = VectorDB._privateConstructor();
   factory VectorDB() => instance;
 
-  Future<String> getIndexPath(VectorDbTable table) async {
+  Future<String> getIndexPath(VectorTable table) async {
     _tablePaths[table] ??= await _initVectorDbTable(table);
     return _tablePaths[table]!;
   }
 
-  Future<String> _initVectorDbTable(VectorDbTable table) async {
+  Future<String> _initVectorDbTable(VectorTable table) async {
     final documentsDirectory = await getApplicationDocumentsDirectory();
     final String tableDirectory =
         join(documentsDirectory.path, _vectorDbTablePath(table));
     return tableDirectory;
   }
 
-  String _vectorDbTablePath(VectorDbTable table) {
+  String _vectorDbTablePath(VectorTable table) {
     switch (table) {
-      case VectorDbTable.faceMl:
+      case VectorTable.faces:
         return "face_ml_index.usi";
-      case VectorDbTable.clip:
+      case VectorTable.clip:
         return "clip_index.usi";
     }
   }
 
-  Lock _vectorDbLock(VectorDbTable table) {
+  Lock _vectorDbLock(VectorTable table) {
     switch (table) {
-      case VectorDbTable.faceMl:
+      case VectorTable.faces:
         return _faceMlLock;
-      case VectorDbTable.clip:
+      case VectorTable.clip:
         return _clipLock;
     }
   }
 
   Future<(int, int, int)> getIndexStatus(
-    VectorDbTable table,
+    VectorTable table,
   ) async {
     _logger.info("getIndexStatus called for $table");
     return await _vectorDbLock(table).synchronized(() async {
@@ -94,7 +94,7 @@ class VectorDB {
   }
 
   Future<void> addVector(
-    VectorDbTable table,
+    VectorTable table,
     int key,
     List<double> vector,
   ) async {
@@ -123,7 +123,7 @@ class VectorDB {
   }
 
   Future<void> bulkAddVectors(
-    VectorDbTable table,
+    VectorTable table,
     List<int> keys,
     List<List<double>> vectors,
   ) async {
@@ -157,7 +157,7 @@ class VectorDB {
   }
 
   Future<(Uint64List, Float32List)> searchVectors(
-    VectorDbTable table,
+    VectorTable table,
     List<double> query,
     int count,
   ) async {
@@ -192,7 +192,7 @@ class VectorDB {
   }
 
   Future<int> removeVector(
-    VectorDbTable table,
+    VectorTable table,
     int key,
   ) async {
     _logger.info("removeVector called for $table");
@@ -223,7 +223,7 @@ class VectorDB {
 
   /// WARNING: This will remove all vectors from the index, use with caution.
   Future<void> resetIndex(
-    VectorDbTable table,
+    VectorTable table,
   ) async {
     _logger.info("resetIndex called for $table");
     await _vectorDbLock(table).synchronized(() async {

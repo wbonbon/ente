@@ -32,6 +32,22 @@ const createFacesTable = '''CREATE TABLE IF NOT EXISTS $facesTable (
 const deleteFacesTable = 'DELETE FROM $facesTable';
 // End of Faces Table Fields & Schema Queries
 
+//##region Face Embeddings Table Fields & Schema Queries
+const faceEmbeddingsTable = 'face_embeddings';
+const feFaceId = 'face_id';
+const feEmbeddingKey = 'embedding_key';
+
+const createFaceEmbeddingsTable =
+    '''CREATE TABLE IF NOT EXISTS $faceEmbeddingsTable (
+  $feFaceId	TEXT NOT NULL,
+  $feEmbeddingKey	INTEGER NOT NULL,
+  PRIMARY KEY($feFaceId, $feEmbeddingKey)
+);
+''';
+
+const deleteFaceEmbeddingsTable = 'DELETE FROM $faceEmbeddingsTable';
+//##endregion
+
 //##region Face Clusters Table Fields & Schema Queries
 const faceClustersTable = 'face_clusters';
 const fcClusterID = 'cluster_id';
