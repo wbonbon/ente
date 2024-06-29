@@ -6,15 +6,18 @@ class GalleryContextState extends InheritedWidget {
   final bool sortOrderAsc;
   final bool inSelectionMode;
   final GroupType type;
+  final ScrollController scrollController;
 
   const GalleryContextState({
     this.inSelectionMode = false,
     this.type = GroupType.day,
     required this.sortOrderAsc,
+    required this.scrollController,
     required Widget child,
     Key? key,
   }) : super(key: key, child: child);
 
+//TODO: throw error with message if no GalleryContextState found
   static GalleryContextState? of(BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<GalleryContextState>();
   }

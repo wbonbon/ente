@@ -1,11 +1,15 @@
+import "dart:async";
+
 import "package:flutter/material.dart";
 import "package:flutter/services.dart";
+import "package:logging/logging.dart";
 import "package:media_extension/media_extension.dart";
 import "package:media_extension/media_extension_action_types.dart";
 import "package:photos/core/constants.dart";
 import 'package:photos/models/file/file.dart';
 import "package:photos/models/selected_files.dart";
 import "package:photos/services/app_lifecycle_service.dart";
+import "package:photos/states/pointer_position_provider.dart";
 import "package:photos/theme/ente_theme.dart";
 import "package:photos/ui/viewer/file/detail_page.dart";
 import "package:photos/ui/viewer/file/thumbnail_widget.dart";
@@ -14,7 +18,7 @@ import "package:photos/ui/viewer/gallery/state/gallery_context_state.dart";
 import "package:photos/utils/file_util.dart";
 import "package:photos/utils/navigation_util.dart";
 
-class GalleryFileWidget extends StatelessWidget {
+class GalleryFileWidget extends StatefulWidget {
   final EnteFile file;
   final SelectedFiles? selectedFiles;
   final bool limitSelectionToOne;
@@ -36,41 +40,116 @@ class GalleryFileWidget extends StatelessWidget {
   });
 
   @override
+  State<GalleryFileWidget> createState() => _GalleryFileWidgetState();
+}
+
+class _GalleryFileWidgetState extends State<GalleryFileWidget> {
+  final _globalKey = GlobalKey();
+  bool _insideBbox = false;
+  bool _insideBboxPrevValue = false;
+  late StreamSubscription<Offset> _pointerPositionStreamSubscription;
+  final _logger = Logger("GalleryFileWidget");
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Future.delayed(const Duration(seconds: 1), () {
+          try {
+            final scrollController =
+                GalleryContextState.of(context)!.scrollController;
+            final RenderBox renderBox =
+                _globalKey.currentContext?.findRenderObject() as RenderBox;
+            final position = renderBox.localToGlobal(Offset.zero);
+            final size = renderBox.size;
+            final bbox = Rect.fromLTWH(
+              position.dx,
+              position.dy,
+              size.width,
+              size.height,
+            );
+            _pointerPositionStreamSubscription = PointerPosition.of(context)
+                .pointerPositionStreamController
+                .stream
+                .listen((event) {
+              if (widget.selectedFiles?.files.isEmpty ?? true) return;
+              _insideBboxPrevValue = _insideBbox;
+
+              final bboxAccountingToScrollPos = Rect.fromLTWH(
+                bbox.left,
+                bbox.top - scrollController.offset,
+                bbox.width,
+                bbox.height,
+              );
+
+              if (bboxAccountingToScrollPos.contains(event)) {
+                _insideBbox = true;
+              } else {
+                _insideBbox = false;
+              }
+
+              if (_insideBbox == true && _insideBboxPrevValue == false) {
+                // print('Entered ${widget.file.displayName}');
+                widget.selectedFiles!.toggleSelection(widget.file);
+              } else if (_insideBbox == false && _insideBboxPrevValue == true) {
+                // print('Exited ${widget.index}');
+              }
+            });
+          } catch (e) {
+            _logger.warning("Error in pointer position subscription", e);
+          }
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _pointerPositionStreamSubscription.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final isFileSelected = selectedFiles?.isFileSelected(file) ?? false;
+    final isFileSelected =
+        widget.selectedFiles?.isFileSelected(widget.file) ?? false;
     Color selectionColor = Colors.white;
-    if (isFileSelected && file.isUploaded && file.ownerID != currentUserID) {
+    if (isFileSelected &&
+        widget.file.isUploaded &&
+        widget.file.ownerID != widget.currentUserID) {
       final avatarColors = getEnteColorScheme(context).avatarColors;
       selectionColor =
-          avatarColors[(file.ownerID!).remainder(avatarColors.length)];
+          avatarColors[(widget.file.ownerID!).remainder(avatarColors.length)];
     }
-    final String heroTag = tag + file.tag;
+    final String heroTag = widget.tag + widget.file.tag;
     final Widget thumbnailWidget = ThumbnailWidget(
-      file,
+      widget.file,
       diskLoadDeferDuration: thumbnailDiskLoadDeferDuration,
       serverLoadDeferDuration: thumbnailServerLoadDeferDuration,
       shouldShowLivePhotoOverlay: true,
       key: Key(heroTag),
-      thumbnailSize: photoGridSize < photoGridSizeDefault
+      thumbnailSize: widget.photoGridSize < photoGridSizeDefault
           ? thumbnailLargeSize
           : thumbnailSmallSize,
       shouldShowOwnerAvatar: !isFileSelected,
     );
     return GestureDetector(
       onTap: () {
-        limitSelectionToOne
-            ? _onTapWithSelectionLimit(file)
-            : _onTapNoSelectionLimit(context, file);
+        widget.limitSelectionToOne
+            ? _onTapWithSelectionLimit(widget.file)
+            : _onTapNoSelectionLimit(context, widget.file);
       },
       onLongPress: () {
-        limitSelectionToOne
-            ? _onLongPressWithSelectionLimit(context, file)
-            : _onLongPressNoSelectionLimit(context, file);
+        widget.limitSelectionToOne
+            ? _onLongPressWithSelectionLimit(context, widget.file)
+            : _onLongPressNoSelectionLimit(context, widget.file);
       },
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           ClipRRect(
+            key: _globalKey,
             borderRadius: BorderRadius.circular(1),
             child: Hero(
               tag: heroTag,
@@ -113,19 +192,20 @@ class GalleryFileWidget extends StatelessWidget {
   }
 
   void _toggleFileSelection(EnteFile file) {
-    selectedFiles!.toggleSelection(file);
+    widget.selectedFiles!.toggleSelection(file);
   }
 
   void _onTapWithSelectionLimit(EnteFile file) {
-    if (selectedFiles!.files.isNotEmpty && selectedFiles!.files.first != file) {
-      selectedFiles!.clearAll();
+    if (widget.selectedFiles!.files.isNotEmpty &&
+        widget.selectedFiles!.files.first != file) {
+      widget.selectedFiles!.clearAll();
     }
     _toggleFileSelection(file);
   }
 
   void _onTapNoSelectionLimit(BuildContext context, EnteFile file) async {
     final bool shouldToggleSelection =
-        (selectedFiles?.files.isNotEmpty ?? false) ||
+        (widget.selectedFiles?.files.isNotEmpty ?? false) ||
             GalleryContextState.of(context)!.inSelectionMode;
     if (shouldToggleSelection) {
       _toggleFileSelection(file);
@@ -141,7 +221,7 @@ class GalleryFileWidget extends StatelessWidget {
   }
 
   void _onLongPressNoSelectionLimit(BuildContext context, EnteFile file) {
-    if (selectedFiles!.files.isNotEmpty) {
+    if (widget.selectedFiles!.files.isNotEmpty) {
       _routeToDetailPage(file, context);
     } else if (AppLifecycleService.instance.mediaExtensionAction.action ==
         IntentAction.main) {
@@ -166,10 +246,10 @@ class GalleryFileWidget extends StatelessWidget {
   void _routeToDetailPage(EnteFile file, BuildContext context) {
     final page = DetailPage(
       DetailPageConfiguration(
-        List.unmodifiable(filesInGroup),
-        asyncLoader,
-        filesInGroup.indexOf(file),
-        tag,
+        List.unmodifiable(widget.filesInGroup),
+        widget.asyncLoader,
+        widget.filesInGroup.indexOf(file),
+        widget.tag,
         sortOrderAsc: GalleryContextState.of(context)!.sortOrderAsc,
       ),
     );

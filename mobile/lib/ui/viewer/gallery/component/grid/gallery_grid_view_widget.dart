@@ -4,6 +4,7 @@ import 'package:photos/models/file/file.dart';
 import "package:photos/models/selected_files.dart";
 import "package:photos/ui/viewer/gallery/component/gallery_file_widget.dart";
 import "package:photos/ui/viewer/gallery/gallery.dart";
+import "package:photos/ui/viewer/gallery/state/gallery_context_state.dart";
 
 class GalleryGridViewWidget extends StatelessWidget {
   final List<EnteFile> filesInGroup;
@@ -29,6 +30,7 @@ class GalleryGridViewWidget extends StatelessWidget {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      controller: GalleryContextState.of(context)!.scrollController,
       // to disable GridView's scrolling
       itemBuilder: (context, index) {
         return GalleryFileWidget(
