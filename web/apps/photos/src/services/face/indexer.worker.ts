@@ -1,5 +1,5 @@
+import type { EnteFile } from "@/new/photos/types/file";
 import log from "@/next/log";
-import type { EnteFile } from "types/file";
 import { fileLogID } from "utils/file";
 import {
     closeFaceDBConnectionsIfNeeded,
@@ -14,7 +14,7 @@ import type { FaceIndex } from "./types";
  * Index faces in a file, save the persist the results locally, and put them on
  * remote.
  *
- * This class is instantiated in a Web Worker so as to not get in the way of the
+ * This class is instantiated in a web worker so as to not get in the way of the
  * main thread. It could've been a bunch of free standing functions too, it is
  * just a class for convenience of compatibility with how the rest of our
  * comlink workers are structured.

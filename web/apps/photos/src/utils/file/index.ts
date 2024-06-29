@@ -1,6 +1,17 @@
 import { FILE_TYPE } from "@/media/file-type";
 import { isNonWebImageFileExtension } from "@/media/formats";
+import { heicToJPEG } from "@/media/heic-convert";
 import { decodeLivePhoto } from "@/media/live-photo";
+import {
+    EncryptedEnteFile,
+    EnteFile,
+    FileMagicMetadata,
+    FileMagicMetadataProps,
+    FilePublicMagicMetadata,
+    FilePublicMagicMetadataProps,
+    FileWithUpdatedMagicMetadata,
+} from "@/new/photos/types/file";
+import { VISIBILITY_STATE } from "@/new/photos/types/magicMetadata";
 import { lowercaseExtension } from "@/next/file";
 import log from "@/next/log";
 import { CustomErrorMessage, type Electron } from "@/next/types/ipc";
@@ -22,22 +33,11 @@ import {
     updateFileMagicMetadata,
     updateFilePublicMagicMetadata,
 } from "services/fileService";
-import { heicToJPEG } from "services/heic-convert";
-import {
-    EncryptedEnteFile,
-    EnteFile,
-    FileMagicMetadata,
-    FileMagicMetadataProps,
-    FilePublicMagicMetadata,
-    FilePublicMagicMetadataProps,
-    FileWithUpdatedMagicMetadata,
-} from "types/file";
 import {
     SelectedState,
     SetFilesDownloadProgressAttributes,
     SetFilesDownloadProgressAttributesCreator,
 } from "types/gallery";
-import { VISIBILITY_STATE } from "types/magicMetadata";
 import { isArchivedFile, updateMagicMetadata } from "utils/magicMetadata";
 import { safeFileName } from "utils/native-fs";
 import { writeStream } from "utils/native-stream";

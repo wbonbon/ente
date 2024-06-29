@@ -16,6 +16,7 @@ import "package:photos/ui/viewer/gallery/component/group/type.dart";
 import "package:photos/ui/viewer/gallery/component/multiple_groups_gallery_view.dart";
 import 'package:photos/ui/viewer/gallery/empty_state.dart';
 import "package:photos/ui/viewer/gallery/state/gallery_context_state.dart";
+import "package:photos/ui/viewer/gallery/state/selection_state.dart";
 import "package:photos/utils/debouncer.dart";
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
@@ -108,6 +109,7 @@ class GalleryState extends State<Gallery> {
   late String _logTag;
   bool _sortOrderAsc = false;
   final _scrollController = ScrollController();
+  List<EnteFile> _allFiles = [];
 
   @override
   void initState() {
@@ -214,6 +216,8 @@ class GalleryState extends State<Gallery> {
   // group files into multiple groups and returns `true` if it resulted in a
   // gallery reload
   bool _onFilesLoaded(List<EnteFile> files) {
+    _allFiles = files;
+
     final updatedGroupedFiles =
         widget.enableFileGrouping && widget.groupType.timeGrouping()
             ? _groupBasedOnTime(files)
@@ -248,6 +252,7 @@ class GalleryState extends State<Gallery> {
   @override
   Widget build(BuildContext context) {
     _logger.finest("Building Gallery  ${widget.tagPrefix}");
+    SelectionState.of(context)?.allGalleryFiles = _allFiles;
     if (!_hasLoadedFiles) {
       return widget.loadingWidget;
     }

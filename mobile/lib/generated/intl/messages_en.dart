@@ -125,6 +125,8 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m36(albumName) => "Moved successfully to ${albumName}";
 
+  static String m70(name) => "Not ${name}?";
+
   static String m37(passwordStrengthValue) =>
       "Password strength: ${passwordStrengthValue}";
 
@@ -418,6 +420,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Check for updates"),
         "checkInboxAndSpamFolder": MessageLookupByLibrary.simpleMessage(
             "Please check your inbox (and spam) to complete verification"),
+        "checkStatus": MessageLookupByLibrary.simpleMessage("Check status"),
         "checking": MessageLookupByLibrary.simpleMessage("Checking..."),
         "claimFreeStorage":
             MessageLookupByLibrary.simpleMessage("Claim free storage"),
@@ -522,6 +525,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Creating link..."),
         "criticalUpdateAvailable":
             MessageLookupByLibrary.simpleMessage("Critical update available"),
+        "crop": MessageLookupByLibrary.simpleMessage("Crop"),
         "currentUsageIs":
             MessageLookupByLibrary.simpleMessage("Current usage is "),
         "custom": MessageLookupByLibrary.simpleMessage("Custom"),
@@ -855,6 +859,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "leaveFamily": MessageLookupByLibrary.simpleMessage("Leave family"),
         "leaveSharedAlbum":
             MessageLookupByLibrary.simpleMessage("Leave shared album?"),
+        "left": MessageLookupByLibrary.simpleMessage("Left"),
         "light": MessageLookupByLibrary.simpleMessage("Light"),
         "lightTheme": MessageLookupByLibrary.simpleMessage("Light"),
         "linkCopiedToClipboard":
@@ -906,6 +911,10 @@ class MessageLookup extends MessageLookupByLibrary {
         "lockscreen": MessageLookupByLibrary.simpleMessage("Lockscreen"),
         "logInLabel": MessageLookupByLibrary.simpleMessage("Log in"),
         "loggingOut": MessageLookupByLibrary.simpleMessage("Logging out..."),
+        "loginSessionExpired":
+            MessageLookupByLibrary.simpleMessage("Session expired"),
+        "loginSessionExpiredDetails": MessageLookupByLibrary.simpleMessage(
+            "Your session has expired. Please login again."),
         "loginTerms": MessageLookupByLibrary.simpleMessage(
             "By clicking log in, I agree to the <u-terms>terms of service</u-terms> and <u-policy>privacy policy</u-policy>"),
         "logout": MessageLookupByLibrary.simpleMessage("Logout"),
@@ -992,6 +1001,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "noResults": MessageLookupByLibrary.simpleMessage("No results"),
         "noResultsFound":
             MessageLookupByLibrary.simpleMessage("No results found"),
+        "notPersonLabel": m70,
         "nothingSharedWithYouYet":
             MessageLookupByLibrary.simpleMessage("Nothing shared with you yet"),
         "nothingToSeeHere":
@@ -1018,6 +1028,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "pairWithPin": MessageLookupByLibrary.simpleMessage("Pair with PIN"),
         "pairingComplete":
             MessageLookupByLibrary.simpleMessage("Pairing complete"),
+        "passKeyPendingVerification": MessageLookupByLibrary.simpleMessage(
+            "Verification is still pending"),
         "passkey": MessageLookupByLibrary.simpleMessage("Passkey"),
         "passkeyAuthTitle":
             MessageLookupByLibrary.simpleMessage("Passkey verification"),
@@ -1201,6 +1213,10 @@ class MessageLookup extends MessageLookupByLibrary {
         "retry": MessageLookupByLibrary.simpleMessage("Retry"),
         "reviewDeduplicateItems": MessageLookupByLibrary.simpleMessage(
             "Please review and delete the items you believe are duplicates."),
+        "reviewSuggestions":
+            MessageLookupByLibrary.simpleMessage("Review suggestions"),
+        "right": MessageLookupByLibrary.simpleMessage("Right"),
+        "rotate": MessageLookupByLibrary.simpleMessage("Rotate"),
         "rotateLeft": MessageLookupByLibrary.simpleMessage("Rotate left"),
         "rotateRight": MessageLookupByLibrary.simpleMessage("Rotate right"),
         "safelyStored": MessageLookupByLibrary.simpleMessage("Safely stored"),
@@ -1212,6 +1228,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage(
                 "Save your recovery key if you haven\'t already"),
         "saving": MessageLookupByLibrary.simpleMessage("Saving..."),
+        "savingEdits": MessageLookupByLibrary.simpleMessage("Saving edits..."),
         "scanCode": MessageLookupByLibrary.simpleMessage("Scan code"),
         "scanThisBarcodeWithnyourAuthenticatorApp":
             MessageLookupByLibrary.simpleMessage(
@@ -1458,6 +1475,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "totalSize": MessageLookupByLibrary.simpleMessage("Total size"),
         "trash": MessageLookupByLibrary.simpleMessage("Trash"),
         "trashDaysLeft": m64,
+        "trim": MessageLookupByLibrary.simpleMessage("Trim"),
         "tryAgain": MessageLookupByLibrary.simpleMessage("Try again"),
         "turnOnBackupForAutoUpload": MessageLookupByLibrary.simpleMessage(
             "Turn on backup to automatically upload files added to this device folder to Ente."),
@@ -1501,6 +1519,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Upto 50% off, until 4th Dec."),
         "usableReferralStorageInfo": MessageLookupByLibrary.simpleMessage(
             "Usable storage is limited by your current plan. Excess claimed storage will automatically become usable when you upgrade your plan."),
+        "useAsCover": MessageLookupByLibrary.simpleMessage("Use as cover"),
         "usePublicLinksForPeopleNotOnEnte":
             MessageLookupByLibrary.simpleMessage(
                 "Use public links for people not on Ente"),
@@ -1554,6 +1573,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "weHaveSendEmailTo": m67,
         "weakStrength": MessageLookupByLibrary.simpleMessage("Weak"),
         "welcomeBack": MessageLookupByLibrary.simpleMessage("Welcome back!"),
+        "whatsNew": MessageLookupByLibrary.simpleMessage("What\'s new"),
         "yearly": MessageLookupByLibrary.simpleMessage("Yearly"),
         "yearsAgo": m68,
         "yes": MessageLookupByLibrary.simpleMessage("Yes"),

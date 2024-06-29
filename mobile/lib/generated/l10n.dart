@@ -3162,6 +3162,16 @@ class S {
     );
   }
 
+  /// `Check status`
+  String get checkStatus {
+    return Intl.message(
+      'Check status',
+      name: 'checkStatus',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Checking...`
   String get checking {
     return Intl.message(
@@ -8408,6 +8418,36 @@ class S {
     );
   }
 
+  /// `Verification is still pending`
+  String get passKeyPendingVerification {
+    return Intl.message(
+      'Verification is still pending',
+      name: 'passKeyPendingVerification',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Session expired`
+  String get loginSessionExpired {
+    return Intl.message(
+      'Session expired',
+      name: 'loginSessionExpired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your session has expired. Please login again.`
+  String get loginSessionExpiredDetails {
+    return Intl.message(
+      'Your session has expired. Please login again.',
+      name: 'loginSessionExpiredDetails',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Verify passkey`
   String get verifyPasskey {
     return Intl.message(
@@ -8774,6 +8814,16 @@ class S {
     );
   }
 
+  /// `Saving edits...`
+  String get savingEdits {
+    return Intl.message(
+      'Saving edits...',
+      name: 'savingEdits',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Auto pair`
   String get autoPair {
     return Intl.message(
@@ -8833,6 +8883,97 @@ class S {
       args: [],
     );
   }
+
+  /// `Trim`
+  String get trim {
+    return Intl.message(
+      'Trim',
+      name: 'trim',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Crop`
+  String get crop {
+    return Intl.message(
+      'Crop',
+      name: 'crop',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Rotate`
+  String get rotate {
+    return Intl.message(
+      'Rotate',
+      name: 'rotate',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Left`
+  String get left {
+    return Intl.message(
+      'Left',
+      name: 'left',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Right`
+  String get right {
+    return Intl.message(
+      'Right',
+      name: 'right',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `What's new`
+  String get whatsNew {
+    return Intl.message(
+      'What\'s new',
+      name: 'whatsNew',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Review suggestions`
+  String get reviewSuggestions {
+    return Intl.message(
+      'Review suggestions',
+      name: 'reviewSuggestions',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Use as cover`
+  String get useAsCover {
+    return Intl.message(
+      'Use as cover',
+      name: 'useAsCover',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Not {name}?`
+  String notPersonLabel(String name) {
+    return Intl.message(
+      'Not $name?',
+      name: 'notPersonLabel',
+      desc:
+          'Label to indicate that the person in the photo is not the person whose name is mentioned',
+      args: [name],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {
@@ -8851,6 +8992,7 @@ class AppLocalizationDelegate extends LocalizationsDelegate<S> {
       Locale.fromSubtags(languageCode: 'no'),
       Locale.fromSubtags(languageCode: 'pl'),
       Locale.fromSubtags(languageCode: 'pt'),
+      Locale.fromSubtags(languageCode: 'ru'),
       Locale.fromSubtags(languageCode: 'zh'),
     ];
   }

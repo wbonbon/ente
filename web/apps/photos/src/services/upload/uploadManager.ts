@@ -1,5 +1,7 @@
 import { FILE_TYPE } from "@/media/file-type";
 import { potentialFileTypeFromExtension } from "@/media/live-photo";
+import { getLocalFiles } from "@/new/photos/services/files";
+import { EncryptedEnteFile, EnteFile } from "@/new/photos/types/file";
 import { ensureElectron } from "@/next/electron";
 import { lowercaseExtension, nameAndExtension } from "@/next/file";
 import log from "@/next/log";
@@ -26,10 +28,8 @@ import {
 import { getDisableCFUploadProxyFlag } from "services/userService";
 import watcher from "services/watch";
 import { Collection } from "types/collection";
-import { EncryptedEnteFile, EnteFile } from "types/file";
 import { SetFiles } from "types/gallery";
 import { decryptFile, getUserOwnedFiles, sortFiles } from "utils/file";
-import { getLocalFiles } from "../fileService";
 import {
     getMetadataJSONMapKeyForJSON,
     tryParseTakeoutMetadataJSON,
@@ -402,6 +402,8 @@ class UploadManager {
         this.uploadInProgress = true;
         this.uploaderName = uploaderName;
 
+        const logInterval = setInterval(logAboutMemoryPressureIfNeeded, 1000);
+
         try {
             await this.updateExistingFilesAndCollections(collections);
 
@@ -449,6 +451,7 @@ class UploadManager {
                 this.cryptoWorkers[i]?.terminate();
             }
             this.uploadInProgress = false;
+            clearInterval(logInterval);
         }
 
         return this.uiService.hasFilesInResultList();
@@ -519,6 +522,7 @@ class UploadManager {
 
         while (this.itemsToBeUploaded.length > 0) {
             this.abortIfCancelled();
+            logAboutMemoryPressureIfNeeded();
 
             const clusteredItem = this.itemsToBeUploaded.pop();
             const { localID, collectionID } = clusteredItem;
@@ -567,8 +571,9 @@ class UploadManager {
         uploadResult: UPLOAD_RESULT,
         uploadedFile: EncryptedEnteFile | EnteFile | undefined,
     ) {
+        const key = UPLOAD_RESULT[uploadResult];
         log.info(
-            `Uploaded ${uploadableItem.fileName} with result ${uploadResult}`,
+            `Uploaded ${uploadableItem.fileName} with result ${uploadResult} (${key})`,
         );
         try {
             const electron = globalThis.electron;
@@ -997,4 +1002,41 @@ const uploadItemSize = async (uploadItem: UploadItem): Promise<number> => {
     if (Array.isArray(uploadItem))
         return ensureElectron().pathOrZipItemSize(uploadItem);
     return uploadItem.file.size;
+};
+
+/**
+ * [Note: Memory pressure when uploading video files]
+ *
+ * A user (Fedora 39 VM on Qubes OS with 32 GB RAM, both AppImage and RPM) has
+ * reported that their app runs out of memory when the app tries to upload
+ * multiple large videos simultaneously. For example, 4 parallel uploads of 4
+ * 700 MB videos.
+ *
+ * I am unable to reproduce this: tested on macOS and Linux, with videos up to
+ * 3.8 G x 1 + 3 x 700 M uploaded in parallel. The memory usage remains constant
+ * as expected (hovering around 2 G), since we don't pull the entire videos in
+ * memory and instead do a streaming disk read + encryption + upload.
+ *
+ * The JavaScript heap for the renderer process (when we're running in the
+ * context of our desktop app) is limited to 4 GB. See
+ * https://www.electronjs.org/blog/v8-memory-cage.
+ *
+ * For now, add logs if our usage increases some high water mark. This is solely
+ * so we can better understand the issue if it arises again (and can deal with
+ * it in an informed manner).
+ */
+const logAboutMemoryPressureIfNeeded = () => {
+    if (!globalThis.electron) return;
+    // performance.memory is deprecated in general as a Web standard, and is
+    // also not available in the DOM types provided by TypeScript. However, it
+    // is the method recommended by the Electron team (see the link about the V8
+    // memory cage). The embedded Chromium supports it fine though, we just need
+    // to goad TypeScript to accept the type.
+    const heapSize = (performance as any).memory.totalJSHeapSize;
+    const heapLimit = (performance as any).memory.jsHeapSizeLimit;
+    if (heapSize / heapLimit > 0.7) {
+        log.info(
+            `Memory usage (${heapSize} bytes of ${heapLimit} bytes) exceeds the high water mark`,
+        );
+    }
 };

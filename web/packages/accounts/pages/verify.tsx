@@ -3,9 +3,12 @@ import type { UserVerificationResponse } from "@ente/accounts/types/user";
 import { VerticallyCentered } from "@ente/shared/components/Container";
 import EnteSpinner from "@ente/shared/components/EnteSpinner";
 import FormPaper from "@ente/shared/components/Form/FormPaper";
-import FormPaperFooter from "@ente/shared/components/Form/FormPaper/Footer";
 import FormPaperTitle from "@ente/shared/components/Form/FormPaper/Title";
 import LinkButton from "@ente/shared/components/LinkButton";
+import {
+    LoginFlowFormFooter,
+    VerifyingPasskey,
+} from "@ente/shared/components/LoginComponents";
 import SingleInputForm, {
     type SingleInputFormProps,
 } from "@ente/shared/components/SingleInputForm";
@@ -19,7 +22,7 @@ import {
 } from "@ente/shared/storage/localStorage/helpers";
 import { clearKeys } from "@ente/shared/storage/sessionStorage";
 import type { KeyAttributes, User } from "@ente/shared/user/types";
-import { Box, Typography } from "@mui/material";
+import { Box, Stack, Typography } from "@mui/material";
 import { HttpStatusCode } from "axios";
 import { t } from "i18next";
 import { useRouter } from "next/router";
@@ -27,7 +30,10 @@ import { useEffect, useState } from "react";
 import { Trans } from "react-i18next";
 import { putAttributes, sendOtt, verifyOtt } from "../api/user";
 import { PAGES } from "../constants/pages";
-import { redirectUserToPasskeyVerificationFlow } from "../services/passkey";
+import {
+    openPasskeyVerificationURL,
+    passkeyVerificationRedirectURL,
+} from "../services/passkey";
 import { configureSRP } from "../services/srp";
 import type { PageProps } from "../types/page";
 import type { SRPSetupAttributes } from "../types/srp";
@@ -37,6 +43,9 @@ const Page: React.FC<PageProps> = ({ appContext }) => {
 
     const [email, setEmail] = useState("");
     const [resend, setResend] = useState(0);
+    const [passkeyVerificationData, setPasskeyVerificationData] = useState<
+        { passkeySessionID: string; url: string } | undefined
+    >();
 
     const router = useRouter();
 
@@ -84,11 +93,15 @@ const Page: React.FC<PageProps> = ({ appContext }) => {
                     isTwoFactorEnabled: true,
                     isTwoFactorPasskeysEnabled: true,
                 });
+                // TODO: This is not the first login though if they already have
+                // 2FA. Does this flag mean first login on this device?
                 setIsFirstLogin(true);
-                redirectUserToPasskeyVerificationFlow(
+                const url = passkeyVerificationRedirectURL(
                     appName,
                     passkeySessionID,
                 );
+                setPasskeyVerificationData({ passkeySessionID, url });
+                openPasskeyVerificationURL({ passkeySessionID, url });
             } else if (twoFactorSessionID) {
                 setData(LS_KEYS.USER, {
                     email,
@@ -161,6 +174,36 @@ const Page: React.FC<PageProps> = ({ appContext }) => {
         );
     }
 
+    if (passkeyVerificationData) {
+        // We only need to handle this scenario when running in the desktop app
+        // because the web app will navigate to Passkey verification URL.
+        // However, still we add an additional `globalThis.electron` check to
+        // show a spinner. This prevents the VerifyingPasskey component from
+        // being disorientingly shown for a fraction of a second as the redirect
+        // happens on the web app.
+        //
+        // See: [Note: Passkey verification in the desktop app]
+
+        if (!globalThis.electron) {
+            return (
+                <VerticallyCentered>
+                    <EnteSpinner />
+                </VerticallyCentered>
+            );
+        }
+
+        return (
+            <VerifyingPasskey
+                email={email}
+                passkeySessionID={passkeyVerificationData?.passkeySessionID}
+                onRetry={() =>
+                    openPasskeyVerificationURL(passkeyVerificationData)
+                }
+                appContext={appContext}
+            />
+        );
+    }
+
     return (
         <VerticallyCentered>
             <FormPaper>
@@ -184,18 +227,20 @@ const Page: React.FC<PageProps> = ({ appContext }) => {
                     callback={onSubmit}
                 />
 
-                <FormPaperFooter style={{ justifyContent: "space-between" }}>
-                    {resend === 0 && (
-                        <LinkButton onClick={resendEmail}>
-                            {t("RESEND_MAIL")}
+                <LoginFlowFormFooter>
+                    <Stack direction="row" justifyContent="space-between">
+                        {resend === 0 && (
+                            <LinkButton onClick={resendEmail}>
+                                {t("RESEND_MAIL")}
+                            </LinkButton>
+                        )}
+                        {resend === 1 && <span>{t("SENDING")}</span>}
+                        {resend === 2 && <span>{t("SENT")}</span>}
+                        <LinkButton onClick={logout}>
+                            {t("CHANGE_EMAIL")}
                         </LinkButton>
-                    )}
-                    {resend === 1 && <span>{t("SENDING")}</span>}
-                    {resend === 2 && <span>{t("SENT")}</span>}
-                    <LinkButton onClick={logout}>
-                        {t("CHANGE_EMAIL")}
-                    </LinkButton>
-                </FormPaperFooter>
+                    </Stack>
+                </LoginFlowFormFooter>
             </FormPaper>
         </VerticallyCentered>
     );

@@ -1,3 +1,4 @@
+import { EnteFile } from "@/new/photos/types/file";
 import log from "@/next/log";
 import {
     CenteredFlex,
@@ -58,12 +59,10 @@ import {
     verifyPublicCollectionPassword,
 } from "services/publicCollectionService";
 import { Collection } from "types/collection";
-import { EnteFile } from "types/file";
 import {
     SelectedState,
     SetFilesDownloadProgressAttributes,
     SetFilesDownloadProgressAttributesCreator,
-    UploadTypeSelectorIntent,
 } from "types/gallery";
 import { downloadCollectionFiles, isHiddenCollection } from "utils/collection";
 import {
@@ -582,9 +581,7 @@ export default function PublicCollectionGallery() {
                     uploadTypeSelectorView={uploadTypeSelectorView}
                     closeUploadTypeSelector={closeUploadTypeSelectorView}
                     showSessionExpiredMessage={showPublicLinkExpiredMessage}
-                    uploadTypeSelectorIntent={
-                        UploadTypeSelectorIntent.collectPhotos
-                    }
+                    uploadTypeSelectorIntent="collect"
                     {...{
                         dragAndDropFiles,
                         openFileSelector,

@@ -133,6 +133,7 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
           ? thumbnailLargeSize
           : thumbnailSmallSize,
       shouldShowOwnerAvatar: !isFileSelected,
+      shouldShowVideoDuration: true,
     );
     return GestureDetector(
       onTap: () {

@@ -1,10 +1,10 @@
+import { EnteFile } from "@/new/photos/types/file";
 import log from "@/next/log";
+import { apiURL } from "@/next/origins";
 import HTTPService from "@ente/shared/network/HTTPService";
-import { getEndpoint } from "@ente/shared/network/api";
 import localForage from "@ente/shared/storage/localForage";
 import { getToken } from "@ente/shared/storage/localStorage/helpers";
 import { Collection } from "types/collection";
-import { EnteFile } from "types/file";
 import { SetFiles } from "types/gallery";
 import { EncryptedTrashItem, Trash } from "types/trash";
 import { decryptFile, mergeMetadata, sortTrashFiles } from "utils/file";
@@ -13,8 +13,6 @@ import { getCollection } from "./collectionService";
 const TRASH = "file-trash";
 const TRASH_TIME = "trash-time";
 const DELETED_COLLECTION = "deleted-collection";
-
-const ENDPOINT = getEndpoint();
 
 async function getLocalTrash() {
     const trash = (await localForage.getItem<Trash>(TRASH)) || [];
@@ -91,7 +89,7 @@ export const updateTrash = async (
                 break;
             }
             resp = await HTTPService.get(
-                `${ENDPOINT}/trash/v2/diff`,
+                await apiURL("/trash/v2/diff"),
                 {
                     sinceTime: time,
                 },
@@ -160,7 +158,7 @@ export const emptyTrash = async () => {
         const lastUpdatedAt = await getLastSyncTime();
 
         await HTTPService.post(
-            `${ENDPOINT}/trash/empty`,
+            await apiURL("/trash/empty"),
             { lastUpdatedAt },
             null,
             {
