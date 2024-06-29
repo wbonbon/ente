@@ -13,6 +13,7 @@ import "package:photos/states/pointer_position_provider.dart";
 import "package:photos/theme/ente_theme.dart";
 import "package:photos/ui/viewer/file/detail_page.dart";
 import "package:photos/ui/viewer/file/thumbnail_widget.dart";
+import "package:photos/ui/viewer/gallery/component/group/lazy_group_gallery.dart";
 import "package:photos/ui/viewer/gallery/gallery.dart";
 import "package:photos/ui/viewer/gallery/state/gallery_context_state.dart";
 import "package:photos/utils/file_util.dart";
@@ -57,11 +58,17 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
       if (mounted) {
         Future.delayed(const Duration(seconds: 1), () {
           try {
-            final scrollController =
-                GalleryContextState.of(context)!.scrollController;
             final RenderBox renderBox =
                 _globalKey.currentContext?.findRenderObject() as RenderBox;
-            final position = renderBox.localToGlobal(Offset.zero);
+            final groupGalleryGlobalKey =
+                GroupGalleryGlobalKey.of(context).globalKey;
+            final RenderBox groupGalleryRenderBox =
+                groupGalleryGlobalKey.currentContext?.findRenderObject()
+                    as RenderBox;
+            final position = renderBox.localToGlobal(
+              Offset.zero,
+              ancestor: groupGalleryRenderBox,
+            );
             final size = renderBox.size;
             final bbox = Rect.fromLTWH(
               position.dx,
@@ -76,14 +83,7 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
               if (widget.selectedFiles?.files.isEmpty ?? true) return;
               _insideBboxPrevValue = _insideBbox;
 
-              final bboxAccountingToScrollPos = Rect.fromLTWH(
-                bbox.left,
-                bbox.top - scrollController.offset,
-                bbox.width,
-                bbox.height,
-              );
-
-              if (bboxAccountingToScrollPos.contains(event)) {
+              if (bbox.contains(event)) {
                 _insideBbox = true;
               } else {
                 _insideBbox = false;

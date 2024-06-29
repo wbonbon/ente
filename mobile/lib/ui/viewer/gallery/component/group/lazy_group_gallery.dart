@@ -7,6 +7,7 @@ import 'package:photos/core/constants.dart';
 import 'package:photos/events/files_updated_event.dart';
 import 'package:photos/models/file/file.dart';
 import 'package:photos/models/selected_files.dart';
+import "package:photos/states/pointer_position_provider.dart";
 import 'package:photos/theme/ente_theme.dart';
 import "package:photos/ui/viewer/gallery/component/grid/place_holder_grid_view_widget.dart";
 import "package:photos/ui/viewer/gallery/component/group/group_gallery.dart";
@@ -61,6 +62,7 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
   late StreamSubscription<FilesUpdatedEvent>? _reloadEventSubscription;
   late StreamSubscription<int> _currentIndexSubscription;
   bool? _shouldRender;
+  final _groupGalleryGlobalKey = GlobalKey();
 
   @override
   void initState() {
@@ -233,21 +235,29 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
                   ),
           ],
         ),
-        _shouldRender!
-            ? GroupGallery(
-                photoGridSize: widget.photoGridSize,
-                files: _filesInGroup,
-                tag: widget.tag,
-                asyncLoader: widget.asyncLoader,
-                selectedFiles: widget.selectedFiles,
-                limitSelectionToOne: widget.limitSelectionToOne,
-              )
-            // todo: perf eval should we have separate PlaceHolder for Groups
-            //  instead of creating a large cached view
-            : PlaceHolderGridViewWidget(
-                _filesInGroup.length,
-                widget.photoGridSize,
-              ),
+        PointerPositionProvider(
+          child: GroupGalleryGlobalKey(
+            globalKey: _groupGalleryGlobalKey,
+            child: SizedBox(
+              key: _groupGalleryGlobalKey,
+              child: _shouldRender!
+                  ? GroupGallery(
+                      photoGridSize: widget.photoGridSize,
+                      files: _filesInGroup,
+                      tag: widget.tag,
+                      asyncLoader: widget.asyncLoader,
+                      selectedFiles: widget.selectedFiles,
+                      limitSelectionToOne: widget.limitSelectionToOne,
+                    )
+                  // todo: perf eval should we have separate PlaceHolder for Groups
+                  //  instead of creating a large cached view
+                  : PlaceHolderGridViewWidget(
+                      _filesInGroup.length,
+                      widget.photoGridSize,
+                    ),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -264,4 +274,28 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
       _showSelectAllButtonNotifier.value = true;
     }
   }
+}
+
+class GroupGalleryGlobalKey extends InheritedWidget {
+  const GroupGalleryGlobalKey({
+    super.key,
+    required this.globalKey,
+    required super.child,
+  });
+
+  final GlobalKey globalKey;
+
+  static GroupGalleryGlobalKey? maybeOf(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<GroupGalleryGlobalKey>();
+  }
+
+  static GroupGalleryGlobalKey of(BuildContext context) {
+    final GroupGalleryGlobalKey? result = maybeOf(context);
+    assert(result != null, 'No GroupGalleryGlobalKey found in context');
+    return result!;
+  }
+
+  @override
+  bool updateShouldNotify(GroupGalleryGlobalKey oldWidget) =>
+      globalKey != oldWidget.globalKey;
 }

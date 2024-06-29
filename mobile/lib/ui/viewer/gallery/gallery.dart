@@ -108,7 +108,6 @@ class GalleryState extends State<Gallery> {
   final _forceReloadEventSubscriptions = <StreamSubscription<Event>>[];
   late String _logTag;
   bool _sortOrderAsc = false;
-  final _scrollController = ScrollController();
   List<EnteFile> _allFiles = [];
 
   @override
@@ -245,7 +244,6 @@ class GalleryState extends State<Gallery> {
       subscription.cancel();
     }
     _debouncer.cancelDebounce();
-    _scrollController.dispose();
     super.dispose();
   }
 
@@ -260,7 +258,6 @@ class GalleryState extends State<Gallery> {
       sortOrderAsc: _sortOrderAsc,
       inSelectionMode: widget.inSelectionMode,
       type: widget.groupType,
-      scrollController: _scrollController,
       child: MultipleGroupsGalleryView(
         itemScroller: _itemScroller,
         groupedFiles: currentGroupedFiles,

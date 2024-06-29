@@ -48,7 +48,6 @@ import 'package:photos/services/trash_sync_service.dart';
 import 'package:photos/services/update_service.dart';
 import 'package:photos/services/user_remote_flag_service.dart';
 import 'package:photos/services/user_service.dart';
-import "package:photos/states/pointer_position_provider.dart";
 import 'package:photos/ui/tools/app_lock.dart';
 import 'package:photos/ui/tools/lock_screen.dart';
 import 'package:photos/utils/crypto_util.dart';
@@ -93,13 +92,11 @@ Future<void> _runInForeground(AdaptiveThemeMode? savedThemeMode) async {
 
     runApp(
       AppLock(
-        builder: (args) => PointerPositionProvider(
-          child: EnteApp(
-            _runBackgroundTask,
-            _killBGTask,
-            locale,
-            savedThemeMode,
-          ),
+        builder: (args) => EnteApp(
+          _runBackgroundTask,
+          _killBGTask,
+          locale,
+          savedThemeMode,
         ),
         lockScreen: const LockScreen(),
         enabled: Configuration.instance.shouldShowLockScreen(),
