@@ -9,7 +9,7 @@ import "package:photos/core/constants.dart";
 import 'package:photos/models/file/file.dart';
 import "package:photos/models/selected_files.dart";
 import "package:photos/services/app_lifecycle_service.dart";
-import "package:photos/states/pointer_position_provider.dart";
+import "package:photos/states/pointer_provider.dart";
 import "package:photos/theme/ente_theme.dart";
 import "package:photos/ui/viewer/file/detail_page.dart";
 import "package:photos/ui/viewer/file/thumbnail_widget.dart";
@@ -46,9 +46,11 @@ class GalleryFileWidget extends StatefulWidget {
 
 class _GalleryFileWidgetState extends State<GalleryFileWidget> {
   final _globalKey = GlobalKey();
-  bool _insideBbox = false;
+  bool _pointerInsideBbox = false;
   bool _insideBboxPrevValue = false;
   late StreamSubscription<Offset> _pointerPositionStreamSubscription;
+  late StreamSubscription<Offset> _pointerDownEventStreamSubscription;
+  late StreamSubscription<Offset> _pointerUpEventStreamSubscription;
   final _logger = Logger("GalleryFileWidget");
 
   @override
@@ -76,24 +78,42 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
               size.width,
               size.height,
             );
-            _pointerPositionStreamSubscription = PointerPosition.of(context)
-                .pointerPositionStreamController
+
+            _pointerUpEventStreamSubscription = Pointer.of(context)
+                .upEventStreamController
+                .stream
+                .listen((event) {
+              if (bbox.contains(event)) {
+                if (_pointerInsideBbox) _pointerInsideBbox = false;
+              }
+            });
+
+            _pointerDownEventStreamSubscription = Pointer.of(context)
+                .downEventStreamController
+                .stream
+                .listen((event) {
+              if (bbox.contains(event)) {
+                // widget.selectedFiles!.toggleSelection(widget.file);
+                // _insideBbox = true;
+              }
+            });
+
+            _pointerPositionStreamSubscription = Pointer.of(context)
+                .positionStreamController
                 .stream
                 .listen((event) {
               if (widget.selectedFiles?.files.isEmpty ?? true) return;
-              _insideBboxPrevValue = _insideBbox;
+              _insideBboxPrevValue = _pointerInsideBbox;
 
               if (bbox.contains(event)) {
-                _insideBbox = true;
+                _pointerInsideBbox = true;
               } else {
-                _insideBbox = false;
+                _pointerInsideBbox = false;
               }
 
-              if (_insideBbox == true && _insideBboxPrevValue == false) {
+              if (_pointerInsideBbox == true && _insideBboxPrevValue == false) {
                 // print('Entered ${widget.file.displayName}');
                 widget.selectedFiles!.toggleSelection(widget.file);
-              } else if (_insideBbox == false && _insideBboxPrevValue == true) {
-                // print('Exited ${widget.index}');
               }
             });
           } catch (e) {
@@ -107,6 +127,8 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
   @override
   void dispose() {
     _pointerPositionStreamSubscription.cancel();
+    _pointerDownEventStreamSubscription.cancel();
+    _pointerUpEventStreamSubscription.cancel();
     super.dispose();
   }
 
@@ -210,6 +232,7 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
             GalleryContextState.of(context)!.inSelectionMode;
     if (shouldToggleSelection) {
       _toggleFileSelection(file);
+      _pointerInsideBbox = true;
     } else {
       if (AppLifecycleService.instance.mediaExtensionAction.action ==
           IntentAction.pick) {
@@ -228,6 +251,7 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
         IntentAction.main) {
       HapticFeedback.lightImpact();
       _toggleFileSelection(file);
+      _pointerInsideBbox = true;
     }
   }
 

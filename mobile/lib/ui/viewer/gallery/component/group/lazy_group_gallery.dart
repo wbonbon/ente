@@ -7,7 +7,7 @@ import 'package:photos/core/constants.dart';
 import 'package:photos/events/files_updated_event.dart';
 import 'package:photos/models/file/file.dart';
 import 'package:photos/models/selected_files.dart';
-import "package:photos/states/pointer_position_provider.dart";
+import "package:photos/states/pointer_provider.dart";
 import 'package:photos/theme/ente_theme.dart';
 import "package:photos/ui/viewer/gallery/component/grid/place_holder_grid_view_widget.dart";
 import "package:photos/ui/viewer/gallery/component/group/group_gallery.dart";
@@ -235,7 +235,7 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
                   ),
           ],
         ),
-        PointerPositionProvider(
+        PointerProvider(
           child: GroupGalleryGlobalKey(
             globalKey: _groupGalleryGlobalKey,
             child: SizedBox(
