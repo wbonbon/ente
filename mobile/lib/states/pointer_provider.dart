@@ -16,9 +16,9 @@ class PointerProvider extends StatefulWidget {
 class _PointerProviderState extends State<PointerProvider> {
   @override
   void dispose() {
-    Pointer.of(context).closePositionController();
-    Pointer.of(context).closeDownEventController();
-    Pointer.of(context).upDownEventController();
+    Pointer.of(context).closeMoveOffsetController();
+    Pointer.of(context).closeDownOffsetStreamController();
+    Pointer.of(context).closeUpOffsetStreamController();
     super.dispose();
   }
 
@@ -31,18 +31,18 @@ class _PointerProviderState extends State<PointerProvider> {
             onPointerMove: (event) {
               if (event.delta.distance > 0) {
                 Pointer.of(context)
-                    .positionStreamController
+                    .moveOffsetStreamController
                     .add(event.localPosition);
               }
             },
             onPointerDown: (event) {
               Pointer.of(context)
-                  .downEventStreamController
+                  .downOffsetStreamController
                   .add(event.localPosition);
             },
             onPointerUp: (event) {
               Pointer.of(context)
-                  .upEventStreamController
+                  .upOffsetStreamController
                   .add(event.localPosition);
             },
             child: widget.child,
@@ -56,28 +56,28 @@ class _PointerProviderState extends State<PointerProvider> {
 class Pointer extends InheritedWidget {
   Pointer({super.key, required super.child});
 
-  final StreamController<Offset> positionStreamController =
+  final StreamController<Offset> moveOffsetStreamController =
       StreamController.broadcast();
 
-  final StreamController<Offset> downEventStreamController =
+  final StreamController<Offset> downOffsetStreamController =
       StreamController.broadcast();
 
-  final StreamController<Offset> upEventStreamController =
+  final StreamController<Offset> upOffsetStreamController =
       StreamController.broadcast();
 
-  Future<dynamic> closePositionController() {
-    debugPrint("dragToSelect: Closing position stream controller");
-    return positionStreamController.close();
+  Future<dynamic> closeMoveOffsetController() {
+    debugPrint("dragToSelect: Closing moveOffsetStreamController");
+    return moveOffsetStreamController.close();
   }
 
-  Future<dynamic> closeDownEventController() {
-    debugPrint("dragToSelect: Closing down event stream controller");
-    return downEventStreamController.close();
+  Future<dynamic> closeDownOffsetStreamController() {
+    debugPrint("dragToSelect: Closing downOffsetStreamController");
+    return downOffsetStreamController.close();
   }
 
-  Future<dynamic> upDownEventController() {
-    debugPrint("dragToSelect: Closing up event stream controller");
-    return upEventStreamController.close();
+  Future<dynamic> closeUpOffsetStreamController() {
+    debugPrint("dragToSelect: Closing upOffsetStreamController");
+    return upOffsetStreamController.close();
   }
 
   static Pointer? maybeOf(BuildContext context) {
@@ -86,13 +86,13 @@ class Pointer extends InheritedWidget {
 
   static Pointer of(BuildContext context) {
     final Pointer? result = maybeOf(context);
-    assert(result != null, 'No PointerPositionProvider found in context');
+    assert(result != null, 'No Pointer found in context');
     return result!;
   }
 
   @override
   bool updateShouldNotify(Pointer oldWidget) =>
-      positionStreamController != oldWidget.positionStreamController ||
-      downEventStreamController != oldWidget.downEventStreamController ||
-      upEventStreamController != oldWidget.upEventStreamController;
+      moveOffsetStreamController != oldWidget.moveOffsetStreamController ||
+      downOffsetStreamController != oldWidget.downOffsetStreamController ||
+      upOffsetStreamController != oldWidget.upOffsetStreamController;
 }

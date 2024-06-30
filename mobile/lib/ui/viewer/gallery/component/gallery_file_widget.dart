@@ -80,7 +80,7 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
             );
 
             _pointerUpEventStreamSubscription = Pointer.of(context)
-                .upEventStreamController
+                .upOffsetStreamController
                 .stream
                 .listen((event) {
               if (bbox.contains(event)) {
@@ -89,7 +89,7 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
             });
 
             _pointerDownEventStreamSubscription = Pointer.of(context)
-                .downEventStreamController
+                .downOffsetStreamController
                 .stream
                 .listen((event) {
               if (bbox.contains(event)) {
@@ -99,7 +99,7 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
             });
 
             _pointerPositionStreamSubscription = Pointer.of(context)
-                .positionStreamController
+                .moveOffsetStreamController
                 .stream
                 .listen((event) {
               if (widget.selectedFiles?.files.isEmpty ?? true) return;
