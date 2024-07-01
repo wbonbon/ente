@@ -17,7 +17,6 @@ class _PointerProviderState extends State<PointerProvider> {
   @override
   void dispose() {
     Pointer.of(context).closeMoveOffsetController();
-    Pointer.of(context).closeDownOffsetStreamController();
     Pointer.of(context).closeUpOffsetStreamController();
     super.dispose();
   }
@@ -34,11 +33,6 @@ class _PointerProviderState extends State<PointerProvider> {
                     .moveOffsetStreamController
                     .add(event.localPosition);
               }
-            },
-            onPointerDown: (event) {
-              Pointer.of(context)
-                  .downOffsetStreamController
-                  .add(event.localPosition);
             },
             onPointerUp: (event) {
               Pointer.of(context)
@@ -59,20 +53,12 @@ class Pointer extends InheritedWidget {
   final StreamController<Offset> moveOffsetStreamController =
       StreamController.broadcast();
 
-  final StreamController<Offset> downOffsetStreamController =
-      StreamController.broadcast();
-
   final StreamController<Offset> upOffsetStreamController =
       StreamController.broadcast();
 
   Future<dynamic> closeMoveOffsetController() {
     debugPrint("dragToSelect: Closing moveOffsetStreamController");
     return moveOffsetStreamController.close();
-  }
-
-  Future<dynamic> closeDownOffsetStreamController() {
-    debugPrint("dragToSelect: Closing downOffsetStreamController");
-    return downOffsetStreamController.close();
   }
 
   Future<dynamic> closeUpOffsetStreamController() {
@@ -93,6 +79,5 @@ class Pointer extends InheritedWidget {
   @override
   bool updateShouldNotify(Pointer oldWidget) =>
       moveOffsetStreamController != oldWidget.moveOffsetStreamController ||
-      downOffsetStreamController != oldWidget.downOffsetStreamController ||
       upOffsetStreamController != oldWidget.upOffsetStreamController;
 }

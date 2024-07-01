@@ -49,7 +49,6 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
   bool _pointerInsideBbox = false;
   bool _insideBboxPrevValue = false;
   late StreamSubscription<Offset> _pointerPositionStreamSubscription;
-  late StreamSubscription<Offset> _pointerDownEventStreamSubscription;
   late StreamSubscription<Offset> _pointerUpEventStreamSubscription;
   final _logger = Logger("GalleryFileWidget");
 
@@ -58,8 +57,8 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
     super.initState();
     if (!widget.limitSelectionToOne) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          Future.delayed(const Duration(seconds: 1), () {
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) {
             try {
               final RenderBox renderBox =
                   _globalKey.currentContext?.findRenderObject() as RenderBox;
@@ -89,16 +88,6 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
                 }
               });
 
-              _pointerDownEventStreamSubscription = Pointer.of(context)
-                  .downOffsetStreamController
-                  .stream
-                  .listen((event) {
-                if (bbox.contains(event)) {
-                  // widget.selectedFiles!.toggleSelection(widget.file);
-                  // _insideBbox = true;
-                }
-              });
-
               _pointerPositionStreamSubscription = Pointer.of(context)
                   .moveOffsetStreamController
                   .stream
@@ -121,8 +110,8 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
             } catch (e) {
               _logger.warning("Error in pointer position subscription", e);
             }
-          });
-        }
+          }
+        });
       });
     }
   }
@@ -130,7 +119,6 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
   @override
   void dispose() {
     _pointerPositionStreamSubscription.cancel();
-    _pointerDownEventStreamSubscription.cancel();
     _pointerUpEventStreamSubscription.cancel();
     super.dispose();
   }
