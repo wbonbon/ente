@@ -14,10 +14,12 @@ class PointerProvider extends StatefulWidget {
 }
 
 class _PointerProviderState extends State<PointerProvider> {
+  late Pointer pointer;
+
   @override
   void dispose() {
-    Pointer.of(context).closeMoveOffsetController();
-    Pointer.of(context).closeUpOffsetStreamController();
+    pointer.closeMoveOffsetController();
+    pointer.closeUpOffsetStreamController();
     super.dispose();
   }
 
@@ -26,18 +28,15 @@ class _PointerProviderState extends State<PointerProvider> {
     return Pointer(
       child: Builder(
         builder: (context) {
+          pointer = Pointer.of(context);
           return Listener(
             onPointerMove: (event) {
               if (event.delta.distance > 0) {
-                Pointer.of(context)
-                    .moveOffsetStreamController
-                    .add(event.localPosition);
+                pointer.moveOffsetStreamController.add(event.localPosition);
               }
             },
             onPointerUp: (event) {
-              Pointer.of(context)
-                  .upOffsetStreamController
-                  .add(event.localPosition);
+              pointer.upOffsetStreamController.add(event.localPosition);
             },
             child: widget.child,
           );
