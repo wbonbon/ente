@@ -56,72 +56,75 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        Future.delayed(const Duration(seconds: 1), () {
-          try {
-            final RenderBox renderBox =
-                _globalKey.currentContext?.findRenderObject() as RenderBox;
-            final groupGalleryGlobalKey =
-                GroupGalleryGlobalKey.of(context).globalKey;
-            final RenderBox groupGalleryRenderBox =
-                groupGalleryGlobalKey.currentContext?.findRenderObject()
-                    as RenderBox;
-            final position = renderBox.localToGlobal(
-              Offset.zero,
-              ancestor: groupGalleryRenderBox,
-            );
-            final size = renderBox.size;
-            final bbox = Rect.fromLTWH(
-              position.dx,
-              position.dy,
-              size.width,
-              size.height,
-            );
+    if (!widget.limitSelectionToOne) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Future.delayed(const Duration(seconds: 1), () {
+            try {
+              final RenderBox renderBox =
+                  _globalKey.currentContext?.findRenderObject() as RenderBox;
+              final groupGalleryGlobalKey =
+                  GroupGalleryGlobalKey.of(context).globalKey;
+              final RenderBox groupGalleryRenderBox =
+                  groupGalleryGlobalKey.currentContext?.findRenderObject()
+                      as RenderBox;
+              final position = renderBox.localToGlobal(
+                Offset.zero,
+                ancestor: groupGalleryRenderBox,
+              );
+              final size = renderBox.size;
+              final bbox = Rect.fromLTWH(
+                position.dx,
+                position.dy,
+                size.width,
+                size.height,
+              );
 
-            _pointerUpEventStreamSubscription = Pointer.of(context)
-                .upOffsetStreamController
-                .stream
-                .listen((event) {
-              if (bbox.contains(event)) {
-                if (_pointerInsideBbox) _pointerInsideBbox = false;
-              }
-            });
+              _pointerUpEventStreamSubscription = Pointer.of(context)
+                  .upOffsetStreamController
+                  .stream
+                  .listen((event) {
+                if (bbox.contains(event)) {
+                  if (_pointerInsideBbox) _pointerInsideBbox = false;
+                }
+              });
 
-            _pointerDownEventStreamSubscription = Pointer.of(context)
-                .downOffsetStreamController
-                .stream
-                .listen((event) {
-              if (bbox.contains(event)) {
-                // widget.selectedFiles!.toggleSelection(widget.file);
-                // _insideBbox = true;
-              }
-            });
+              _pointerDownEventStreamSubscription = Pointer.of(context)
+                  .downOffsetStreamController
+                  .stream
+                  .listen((event) {
+                if (bbox.contains(event)) {
+                  // widget.selectedFiles!.toggleSelection(widget.file);
+                  // _insideBbox = true;
+                }
+              });
 
-            _pointerPositionStreamSubscription = Pointer.of(context)
-                .moveOffsetStreamController
-                .stream
-                .listen((event) {
-              if (widget.selectedFiles?.files.isEmpty ?? true) return;
-              _insideBboxPrevValue = _pointerInsideBbox;
+              _pointerPositionStreamSubscription = Pointer.of(context)
+                  .moveOffsetStreamController
+                  .stream
+                  .listen((event) {
+                if (widget.selectedFiles?.files.isEmpty ?? true) return;
+                _insideBboxPrevValue = _pointerInsideBbox;
 
-              if (bbox.contains(event)) {
-                _pointerInsideBbox = true;
-              } else {
-                _pointerInsideBbox = false;
-              }
+                if (bbox.contains(event)) {
+                  _pointerInsideBbox = true;
+                } else {
+                  _pointerInsideBbox = false;
+                }
 
-              if (_pointerInsideBbox == true && _insideBboxPrevValue == false) {
-                // print('Entered ${widget.file.displayName}');
-                widget.selectedFiles!.toggleSelection(widget.file);
-              }
-            });
-          } catch (e) {
-            _logger.warning("Error in pointer position subscription", e);
-          }
-        });
-      }
-    });
+                if (_pointerInsideBbox == true &&
+                    _insideBboxPrevValue == false) {
+                  // print('Entered ${widget.file.displayName}');
+                  widget.selectedFiles!.toggleSelection(widget.file);
+                }
+              });
+            } catch (e) {
+              _logger.warning("Error in pointer position subscription", e);
+            }
+          });
+        }
+      });
+    }
   }
 
   @override
