@@ -57,61 +57,58 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
     super.initState();
     if (!widget.limitSelectionToOne) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Future.delayed(const Duration(seconds: 1), () {
-          if (mounted) {
-            try {
-              final RenderBox renderBox =
-                  _globalKey.currentContext?.findRenderObject() as RenderBox;
-              final groupGalleryGlobalKey =
-                  GroupGalleryGlobalKey.of(context).globalKey;
-              final RenderBox groupGalleryRenderBox =
-                  groupGalleryGlobalKey.currentContext?.findRenderObject()
-                      as RenderBox;
-              final position = renderBox.localToGlobal(
-                Offset.zero,
-                ancestor: groupGalleryRenderBox,
-              );
-              final size = renderBox.size;
-              final bbox = Rect.fromLTWH(
-                position.dx,
-                position.dy,
-                size.width,
-                size.height,
-              );
+        if (mounted) {
+          try {
+            final RenderBox renderBox =
+                _globalKey.currentContext?.findRenderObject() as RenderBox;
+            final groupGalleryGlobalKey =
+                GroupGalleryGlobalKey.of(context).globalKey;
+            final RenderBox groupGalleryRenderBox =
+                groupGalleryGlobalKey.currentContext?.findRenderObject()
+                    as RenderBox;
+            final position = renderBox.localToGlobal(
+              Offset.zero,
+              ancestor: groupGalleryRenderBox,
+            );
+            final size = renderBox.size;
+            final bbox = Rect.fromLTWH(
+              position.dx,
+              position.dy,
+              size.width,
+              size.height,
+            );
 
-              _pointerUpEventStreamSubscription = Pointer.of(context)
-                  .upOffsetStreamController
-                  .stream
-                  .listen((event) {
-                if (bbox.contains(event)) {
-                  if (_pointerInsideBbox) _pointerInsideBbox = false;
-                }
-              });
+            _pointerUpEventStreamSubscription = Pointer.of(context)
+                .upOffsetStreamController
+                .stream
+                .listen((event) {
+              if (bbox.contains(event)) {
+                if (_pointerInsideBbox) _pointerInsideBbox = false;
+              }
+            });
 
-              _pointerPositionStreamSubscription = Pointer.of(context)
-                  .moveOffsetStreamController
-                  .stream
-                  .listen((event) {
-                if (widget.selectedFiles?.files.isEmpty ?? true) return;
-                _insideBboxPrevValue = _pointerInsideBbox;
+            _pointerPositionStreamSubscription = Pointer.of(context)
+                .moveOffsetStreamController
+                .stream
+                .listen((event) {
+              if (widget.selectedFiles?.files.isEmpty ?? true) return;
+              _insideBboxPrevValue = _pointerInsideBbox;
 
-                if (bbox.contains(event)) {
-                  _pointerInsideBbox = true;
-                } else {
-                  _pointerInsideBbox = false;
-                }
+              if (bbox.contains(event)) {
+                _pointerInsideBbox = true;
+              } else {
+                _pointerInsideBbox = false;
+              }
 
-                if (_pointerInsideBbox == true &&
-                    _insideBboxPrevValue == false) {
-                  // print('Entered ${widget.file.displayName}');
-                  widget.selectedFiles!.toggleSelection(widget.file);
-                }
-              });
-            } catch (e) {
-              _logger.warning("Error in pointer position subscription", e);
-            }
+              if (_pointerInsideBbox == true && _insideBboxPrevValue == false) {
+                // print('Entered ${widget.file.displayName}');
+                widget.selectedFiles!.toggleSelection(widget.file);
+              }
+            });
+          } catch (e) {
+            _logger.warning("Error in pointer position subscription", e);
           }
-        });
+        }
       });
     }
   }
