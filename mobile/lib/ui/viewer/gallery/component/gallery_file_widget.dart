@@ -59,18 +59,25 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           try {
-            final RenderBox renderBox =
-                _globalKey.currentContext?.findRenderObject() as RenderBox;
+            final RenderBox? renderBox =
+                _globalKey.currentContext?.findRenderObject() as RenderBox?;
+            if (renderBox == null) return;
+
             final groupGalleryGlobalKey =
                 GroupGalleryGlobalKey.of(context).globalKey;
-            final RenderBox groupGalleryRenderBox =
+
+            final RenderBox? groupGalleryRenderBox =
                 groupGalleryGlobalKey.currentContext?.findRenderObject()
-                    as RenderBox;
+                    as RenderBox?;
+            if (groupGalleryRenderBox == null) return;
+
             final position = renderBox.localToGlobal(
               Offset.zero,
               ancestor: groupGalleryRenderBox,
             );
+
             final size = renderBox.size;
+
             final bbox = Rect.fromLTWH(
               position.dx,
               position.dy,
