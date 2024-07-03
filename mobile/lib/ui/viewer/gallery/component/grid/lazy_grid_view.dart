@@ -44,6 +44,7 @@ class _LazyGridViewState extends State<LazyGridView> {
 
   @override
   void initState() {
+    super.initState();
     _shouldRender = widget.shouldRender;
     _currentUserID = Configuration.instance.getUserID();
     widget.selectedFiles?.addListener(_selectedFilesListener);
@@ -53,7 +54,6 @@ class _LazyGridViewState extends State<LazyGridView> {
         setState(() {});
       }
     });
-    super.initState();
   }
 
   @override

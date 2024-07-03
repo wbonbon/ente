@@ -53,15 +53,18 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
   final _logger = Logger("GalleryFileWidget");
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     if (!widget.limitSelectionToOne) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           try {
             final RenderBox? renderBox =
                 _globalKey.currentContext?.findRenderObject() as RenderBox?;
-            if (renderBox == null) return;
+            if (renderBox == null) {
+              _logger.info("RenderBox is null. Returning.");
+              return;
+            }
 
             final groupGalleryGlobalKey =
                 GroupGalleryGlobalKey.of(context).globalKey;
@@ -69,7 +72,10 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
             final RenderBox? groupGalleryRenderBox =
                 groupGalleryGlobalKey.currentContext?.findRenderObject()
                     as RenderBox?;
-            if (groupGalleryRenderBox == null) return;
+            if (groupGalleryRenderBox == null) {
+              _logger.info("GroupGalleryRenderBox is null. Returning.");
+              return;
+            }
 
             final position = renderBox.localToGlobal(
               Offset.zero,
@@ -94,26 +100,32 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
               }
             });
 
-            _pointerPositionStreamSubscription = Pointer.of(context)
-                .moveOffsetStreamController
-                .stream
-                .listen((event) {
-              if (widget.selectedFiles?.files.isEmpty ?? true) return;
-              _insideBboxPrevValue = _pointerInsideBbox;
+            _pointerPositionStreamSubscription =
+                Pointer.of(context).moveOffsetStreamController.stream.listen(
+              (event) {
+                if (widget.selectedFiles?.files.isEmpty ?? true) return;
+                _insideBboxPrevValue = _pointerInsideBbox;
 
-              if (bbox.contains(event)) {
-                _pointerInsideBbox = true;
-              } else {
-                _pointerInsideBbox = false;
-              }
+                if (bbox.contains(event)) {
+                  _pointerInsideBbox = true;
+                } else {
+                  _pointerInsideBbox = false;
+                }
 
-              if (_pointerInsideBbox == true && _insideBboxPrevValue == false) {
-                // print('Entered ${widget.file.displayName}');
-                widget.selectedFiles!.toggleSelection(widget.file);
-              }
-            });
+                if (_pointerInsideBbox == true &&
+                    _insideBboxPrevValue == false) {
+                  widget.selectedFiles!.toggleSelection(widget.file);
+                }
+              },
+              onError: (e) {
+                _logger.warning("Error in pointer position subscription", e);
+              },
+              onDone: () {
+                _logger.info("Pointer position subscription done");
+              },
+            );
           } catch (e) {
-            _logger.warning("Error in pointer position subscription", e);
+            _logger.warning("Error in pointer subscription", e);
           }
         }
       });
