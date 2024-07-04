@@ -99,6 +99,7 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
                 .stream
                 .listen((offset) {
               if (bbox.contains(offset)) {
+                _pointerInsideBbox = true;
                 widget.limitSelectionToOne
                     ? _onTapWithSelectionLimit(widget.file)
                     : _onTapNoSelectionLimit(context, widget.file);
@@ -110,6 +111,7 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
                 .stream
                 .listen((offset) {
               if (bbox.contains(offset)) {
+                _pointerInsideBbox = true;
                 widget.limitSelectionToOne
                     ? _onLongPressWithSelectionLimit(context, widget.file)
                     : _onLongPressNoSelectionLimit(context, widget.file);
@@ -254,7 +256,6 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
             GalleryContextState.of(context)!.inSelectionMode;
     if (shouldToggleSelection) {
       _toggleFileSelection(file);
-      _pointerInsideBbox = true;
     } else {
       if (AppLifecycleService.instance.mediaExtensionAction.action ==
           IntentAction.pick) {
@@ -273,7 +274,6 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
         IntentAction.main) {
       HapticFeedback.lightImpact();
       _toggleFileSelection(file);
-      _pointerInsideBbox = true;
     }
   }
 

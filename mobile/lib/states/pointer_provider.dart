@@ -15,6 +15,7 @@ class PointerProvider extends StatefulWidget {
 
 class _PointerProviderState extends State<PointerProvider> {
   late Pointer pointer;
+  bool _isFingerOnScreenSinceLongPress = false;
 
   @override
   void dispose() {
@@ -36,14 +37,31 @@ class _PointerProviderState extends State<PointerProvider> {
               pointer.onTapStreamController.add(pointer.pointerPosition);
             },
             onLongPress: () {
+              _isFingerOnScreenSinceLongPress = true;
               pointer.onLongPressStreamController.add(pointer.pointerPosition);
+            },
+            onHorizontalDragUpdate: (details) {
+              pointer.moveOffsetStreamController.add(details.localPosition);
             },
             child: Listener(
               onPointerMove: (event) {
                 pointer.pointerPosition = event.localPosition;
+
+                //onHorizontalDragUpdate is not called when dragging after
+                //long press without lifting finger. This is for handling only
+                //this case.
+                if (_isFingerOnScreenSinceLongPress &&
+                    (event.localDelta.dx.abs() > 0 &&
+                        event.localDelta.dy.abs() > 0)) {
+                  pointer.moveOffsetStreamController.add(event.localPosition);
+                }
               },
               onPointerDown: (event) {
                 pointer.pointerPosition = event.localPosition;
+              },
+              onPointerUp: (event) {
+                _isFingerOnScreenSinceLongPress = false;
+                pointer.upOffsetStreamController.add(event.localPosition);
               },
               child: widget.child,
             ),
@@ -59,7 +77,7 @@ class Pointer extends InheritedWidget {
 
   //This is a List<Offset> instead of just and Offset is so that it can be final
   //and still be mutable. Need to have this as final to keep Pointer immutable
-  //which is a recommended for inherited widgets.
+  //which is recommended for inherited widgets.
   final _pointerPosition =
       List.generate(1, (_) => Offset.zero, growable: false);
 
