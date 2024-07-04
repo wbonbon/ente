@@ -46,8 +46,14 @@ class GalleryFileWidget extends StatefulWidget {
 
 class _GalleryFileWidgetState extends State<GalleryFileWidget> {
   final _globalKey = GlobalKey();
+
+  /// This does not always hold the correct value. This is used to unselect/select
+  /// photos in swipe selection. It hold the right values during swipe selection
+  /// so, it works fine for what it is used for.
+  /// This can hold incorrect values when during onTap and certain cases of onLongPress.
+  /// Too get a better idea, make this a ValueNotfier and update the UI when this changes.
   bool _pointerInsideBbox = false;
-  bool _insideBboxPrevValue = false;
+  bool _pointerInsideBboxPrevValue = false;
   late StreamSubscription<Offset> _pointerPositionStreamSubscription;
   late StreamSubscription<Offset> _pointerUpEventStreamSubscription;
   late StreamSubscription<Offset> _onTapEventStreamSubscription;
@@ -131,7 +137,7 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
                 Pointer.of(context).moveOffsetStreamController.stream.listen(
               (event) {
                 if (widget.selectedFiles?.files.isEmpty ?? true) return;
-                _insideBboxPrevValue = _pointerInsideBbox;
+                _pointerInsideBboxPrevValue = _pointerInsideBbox;
 
                 if (bbox.contains(event)) {
                   _pointerInsideBbox = true;
@@ -140,7 +146,7 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
                 }
 
                 if (_pointerInsideBbox == true &&
-                    _insideBboxPrevValue == false) {
+                    _pointerInsideBboxPrevValue == false) {
                   widget.selectedFiles!.toggleSelection(widget.file);
                 }
               },
