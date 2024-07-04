@@ -50,6 +50,9 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
   bool _insideBboxPrevValue = false;
   late StreamSubscription<Offset> _pointerPositionStreamSubscription;
   late StreamSubscription<Offset> _pointerUpEventStreamSubscription;
+  late StreamSubscription<Offset> _onTapEventStreamSubscription;
+  late StreamSubscription<Offset> _onLongPressEventStreamSubscription;
+
   final _logger = Logger("GalleryFileWidget");
 
   @override
@@ -90,6 +93,28 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
               size.width,
               size.height,
             );
+
+            _onTapEventStreamSubscription = Pointer.of(context)
+                .onTapStreamController
+                .stream
+                .listen((offset) {
+              if (bbox.contains(offset)) {
+                widget.limitSelectionToOne
+                    ? _onTapWithSelectionLimit(widget.file)
+                    : _onTapNoSelectionLimit(context, widget.file);
+              }
+            });
+
+            _onLongPressEventStreamSubscription = Pointer.of(context)
+                .onLongPressStreamController
+                .stream
+                .listen((offset) {
+              if (bbox.contains(offset)) {
+                widget.limitSelectionToOne
+                    ? _onLongPressWithSelectionLimit(context, widget.file)
+                    : _onLongPressNoSelectionLimit(context, widget.file);
+              }
+            });
 
             _pointerUpEventStreamSubscription = Pointer.of(context)
                 .upOffsetStreamController
@@ -134,8 +159,10 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
 
   @override
   void dispose() {
+    _onTapEventStreamSubscription.cancel();
     _pointerPositionStreamSubscription.cancel();
     _pointerUpEventStreamSubscription.cancel();
+    _onLongPressEventStreamSubscription.cancel();
     super.dispose();
   }
 
@@ -164,60 +191,48 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
       shouldShowOwnerAvatar: !isFileSelected,
       shouldShowVideoDuration: true,
     );
-    return GestureDetector(
-      onTap: () {
-        widget.limitSelectionToOne
-            ? _onTapWithSelectionLimit(widget.file)
-            : _onTapNoSelectionLimit(context, widget.file);
-      },
-      onLongPress: () {
-        widget.limitSelectionToOne
-            ? _onLongPressWithSelectionLimit(context, widget.file)
-            : _onLongPressNoSelectionLimit(context, widget.file);
-      },
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          ClipRRect(
-            key: _globalKey,
-            borderRadius: BorderRadius.circular(1),
-            child: Hero(
-              tag: heroTag,
-              flightShuttleBuilder: (
-                flightContext,
-                animation,
-                flightDirection,
-                fromHeroContext,
-                toHeroContext,
-              ) =>
-                  thumbnailWidget,
-              transitionOnUserGestures: true,
-              child: isFileSelected
-                  ? ColorFiltered(
-                      colorFilter: ColorFilter.mode(
-                        Colors.black.withOpacity(
-                          0.4,
-                        ),
-                        BlendMode.darken,
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        ClipRRect(
+          key: _globalKey,
+          borderRadius: BorderRadius.circular(1),
+          child: Hero(
+            tag: heroTag,
+            flightShuttleBuilder: (
+              flightContext,
+              animation,
+              flightDirection,
+              fromHeroContext,
+              toHeroContext,
+            ) =>
+                thumbnailWidget,
+            transitionOnUserGestures: true,
+            child: isFileSelected
+                ? ColorFiltered(
+                    colorFilter: ColorFilter.mode(
+                      Colors.black.withOpacity(
+                        0.4,
                       ),
-                      child: thumbnailWidget,
-                    )
-                  : thumbnailWidget,
-            ),
+                      BlendMode.darken,
+                    ),
+                    child: thumbnailWidget,
+                  )
+                : thumbnailWidget,
           ),
-          isFileSelected
-              ? Positioned(
-                  right: 4,
-                  top: 4,
-                  child: Icon(
-                    Icons.check_circle_rounded,
-                    size: 20,
-                    color: selectionColor, //same for both themes
-                  ),
-                )
-              : const SizedBox.shrink(),
-        ],
-      ),
+        ),
+        isFileSelected
+            ? Positioned(
+                right: 4,
+                top: 4,
+                child: Icon(
+                  Icons.check_circle_rounded,
+                  size: 20,
+                  color: selectionColor, //same for both themes
+                ),
+              )
+            : const SizedBox.shrink(),
+      ],
     );
   }
 

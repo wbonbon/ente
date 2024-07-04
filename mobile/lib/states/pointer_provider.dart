@@ -20,6 +20,8 @@ class _PointerProviderState extends State<PointerProvider> {
   void dispose() {
     pointer.closeMoveOffsetController();
     pointer.closeUpOffsetStreamController();
+    pointer.closeOnTapStreamController();
+    pointer.closeOnLongPressStreamController();
     super.dispose();
   }
 
@@ -29,16 +31,22 @@ class _PointerProviderState extends State<PointerProvider> {
       child: Builder(
         builder: (context) {
           pointer = Pointer.of(context);
-          return Listener(
-            onPointerMove: (event) {
-              if (event.delta.distance > 0) {
-                pointer.moveOffsetStreamController.add(event.localPosition);
-              }
+          return GestureDetector(
+            onTap: () {
+              pointer.onTapStreamController.add(pointer.pointerPosition);
             },
-            onPointerUp: (event) {
-              pointer.upOffsetStreamController.add(event.localPosition);
+            onLongPress: () {
+              pointer.onLongPressStreamController.add(pointer.pointerPosition);
             },
-            child: widget.child,
+            child: Listener(
+              onPointerMove: (event) {
+                pointer.pointerPosition = event.localPosition;
+              },
+              onPointerDown: (event) {
+                pointer.pointerPosition = event.localPosition;
+              },
+              child: widget.child,
+            ),
           );
         },
       ),
@@ -49,11 +57,39 @@ class _PointerProviderState extends State<PointerProvider> {
 class Pointer extends InheritedWidget {
   Pointer({super.key, required super.child});
 
+  //This is a List<Offset> instead of just and Offset is so that it can be final
+  //and still be mutable. Need to have this as final to keep Pointer immutable
+  //which is a recommended for inherited widgets.
+  final _pointerPosition =
+      List.generate(1, (_) => Offset.zero, growable: false);
+
+  Offset get pointerPosition => _pointerPosition[0];
+
+  set pointerPosition(Offset offset) {
+    _pointerPosition[0] = offset;
+  }
+
+  final StreamController<Offset> onTapStreamController =
+      StreamController.broadcast();
+
+  final StreamController<Offset> onLongPressStreamController =
+      StreamController.broadcast();
+
   final StreamController<Offset> moveOffsetStreamController =
       StreamController.broadcast();
 
   final StreamController<Offset> upOffsetStreamController =
       StreamController.broadcast();
+
+  Future<dynamic> closeOnTapStreamController() {
+    debugPrint("dragToSelect: Closing onTapStreamController");
+    return onTapStreamController.close();
+  }
+
+  Future<dynamic> closeOnLongPressStreamController() {
+    debugPrint("dragToSelect: Closing onLongPressStreamController");
+    return onLongPressStreamController.close();
+  }
 
   Future<dynamic> closeMoveOffsetController() {
     debugPrint("dragToSelect: Closing moveOffsetStreamController");
@@ -78,5 +114,7 @@ class Pointer extends InheritedWidget {
   @override
   bool updateShouldNotify(Pointer oldWidget) =>
       moveOffsetStreamController != oldWidget.moveOffsetStreamController ||
-      upOffsetStreamController != oldWidget.upOffsetStreamController;
+      upOffsetStreamController != oldWidget.upOffsetStreamController ||
+      onTapStreamController != oldWidget.onTapStreamController ||
+      onLongPressStreamController != oldWidget.onLongPressStreamController;
 }
