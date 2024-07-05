@@ -4,6 +4,7 @@ import "package:flutter/widgets.dart";
 import "package:logging/logging.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/selected_files.dart";
+import "package:photos/ui/viewer/gallery/component/group/lazy_group_gallery.dart";
 
 class LastSelectedFileByDragging extends InheritedWidget {
   ///Check if this should updates on didUpdateWidget. If so, use a state varaible
@@ -57,6 +58,8 @@ class PointerProvider extends StatefulWidget {
 }
 
 class _PointerProviderState extends State<PointerProvider> {
+  final _groupGalleryGlobalKey = GlobalKey();
+
   late Pointer pointer;
   bool _isFingerOnScreenSinceLongPress = false;
   bool _isDragging = false;
@@ -136,31 +139,35 @@ class _PointerProviderState extends State<PointerProvider> {
             onHorizontalDragUpdate: (details) {
               onDragToSelect(details.localPosition);
             },
-            child: Listener(
-              onPointerMove: (event) {
-                pointer.pointerPosition = event.localPosition;
+            child: GroupGalleryGlobalKey(
+              globalKey: _groupGalleryGlobalKey,
+              child: Listener(
+                key: _groupGalleryGlobalKey,
+                onPointerMove: (event) {
+                  pointer.pointerPosition = event.localPosition;
 
-                //onHorizontalDragUpdate is not called when dragging after
-                //long press without lifting finger. This is for handling only
-                //this case.
-                if (_isFingerOnScreenSinceLongPress &&
-                    (event.localDelta.dx.abs() > 0 &&
-                        event.localDelta.dy.abs() > 0)) {
-                  onDragToSelect(event.localPosition);
-                }
-              },
-              onPointerDown: (event) {
-                pointer.pointerPosition = event.localPosition;
-              },
-              onPointerUp: (event) {
-                _isFingerOnScreenSinceLongPress = false;
-                _isDragging = false;
-                pointer.upOffsetStreamController.add(event.localPosition);
+                  //onHorizontalDragUpdate is not called when dragging after
+                  //long press without lifting finger. This is for handling only
+                  //this case.
+                  if (_isFingerOnScreenSinceLongPress &&
+                      (event.localDelta.dx.abs() > 0 &&
+                          event.localDelta.dy.abs() > 0)) {
+                    onDragToSelect(event.localPosition);
+                  }
+                },
+                onPointerDown: (event) {
+                  pointer.pointerPosition = event.localPosition;
+                },
+                onPointerUp: (event) {
+                  _isFingerOnScreenSinceLongPress = false;
+                  _isDragging = false;
+                  pointer.upOffsetStreamController.add(event.localPosition);
 
-                LastSelectedFileByDragging.of(context).index.value = -1;
-                currentSelectedFileIndex = -1;
-              },
-              child: widget.child,
+                  LastSelectedFileByDragging.of(context).index.value = -1;
+                  currentSelectedFileIndex = -1;
+                },
+                child: widget.child,
+              ),
             ),
           );
         },
