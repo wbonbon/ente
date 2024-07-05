@@ -30,6 +30,18 @@ class SelectedFiles extends ChangeNotifier {
     notifyListeners();
   }
 
+  void toggleFilesSelection(Set<EnteFile> filesToToggle) {
+    final filesToUnselect = files.intersection(filesToToggle);
+    final filesToSelect = filesToToggle.difference(filesToUnselect);
+
+    //remove the files that are already selected
+    files.removeAll(filesToToggle);
+    files.addAll(filesToSelect);
+    lastSelectionOperationFiles.clear();
+    lastSelectionOperationFiles.addAll(filesToSelect..addAll(filesToUnselect));
+    notifyListeners();
+  }
+
   void toggleGroupSelection(Set<EnteFile> filesToToggle) {
     if (files.containsAll(filesToToggle)) {
       unSelectAll(filesToToggle);
@@ -38,11 +50,13 @@ class SelectedFiles extends ChangeNotifier {
     }
   }
 
-  void selectAll(Set<EnteFile> filesToSelect) {
+  void selectAll(Set<EnteFile> filesToSelect, {bool skipNotify = false}) {
     files.addAll(filesToSelect);
     lastSelectionOperationFiles.clear();
     lastSelectionOperationFiles.addAll(filesToSelect);
-    notifyListeners();
+    if (!skipNotify) {
+      notifyListeners();
+    }
   }
 
   void unSelectAll(Set<EnteFile> filesToUnselect, {bool skipNotify = false}) {

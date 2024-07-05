@@ -1,11 +1,44 @@
 import "dart:async";
 
 import "package:flutter/widgets.dart";
+import "package:photos/models/file/file.dart";
+import "package:photos/models/selected_files.dart";
+
+class LastSelectedFileByDragging extends InheritedWidget {
+  LastSelectedFileByDragging({
+    super.key,
+    required super.child,
+  });
+
+  final file = ValueNotifier<EnteFile?>(null);
+
+  static LastSelectedFileByDragging? maybeOf(BuildContext context) {
+    return context
+        .dependOnInheritedWidgetOfExactType<LastSelectedFileByDragging>();
+  }
+
+  static LastSelectedFileByDragging of(BuildContext context) {
+    final LastSelectedFileByDragging? result = maybeOf(context);
+    assert(result != null, 'No LastSelectedFileByDragging found in context');
+    return result!;
+  }
+
+  @override
+  bool updateShouldNotify(LastSelectedFileByDragging oldWidget) =>
+      file != oldWidget.file;
+}
 
 class PointerProvider extends StatefulWidget {
   final Widget child;
+  final SelectedFiles selectedFiles;
+
+  ///Check if this should updates on didUpdateWidget. If so, use a state varaible
+  ///and update it there on didUpdateWidget.
+  final List<EnteFile> files;
   const PointerProvider({
     super.key,
+    required this.selectedFiles,
+    required this.files,
     required this.child,
   });
 
@@ -16,6 +49,25 @@ class PointerProvider extends StatefulWidget {
 class _PointerProviderState extends State<PointerProvider> {
   late Pointer pointer;
   bool _isFingerOnScreenSinceLongPress = false;
+  bool _isDragging = false;
+  int prevSelectedFileIndex = -1;
+  int currentSelectedFileIndex = -1;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    LastSelectedFileByDragging.of(context)
+        .file
+        .removeListener(swipingToSelectListener);
+    LastSelectedFileByDragging.of(context).file.addListener(
+          swipingToSelectListener,
+        );
+  }
 
   @override
   void dispose() {
@@ -23,7 +75,45 @@ class _PointerProviderState extends State<PointerProvider> {
     pointer.closeUpOffsetStreamController();
     pointer.closeOnTapStreamController();
     pointer.closeOnLongPressStreamController();
+    widget.selectedFiles.removeListener(
+      swipingToSelectListener,
+    );
     super.dispose();
+  }
+
+  void swipingToSelectListener() {
+    prevSelectedFileIndex = currentSelectedFileIndex;
+    final currentSelectedFile =
+        LastSelectedFileByDragging.of(context).file.value;
+    if (currentSelectedFile == null) {
+      print("currentSelectedFile is null");
+      return;
+    }
+    currentSelectedFileIndex = widget.files.indexOf(currentSelectedFile!);
+    if (prevSelectedFileIndex != -1 && currentSelectedFileIndex != -1) {
+      if ((currentSelectedFileIndex - prevSelectedFileIndex).abs() > 1) {
+        late final int startIndex;
+        late final int endIndex;
+        if (currentSelectedFileIndex > prevSelectedFileIndex) {
+          startIndex = prevSelectedFileIndex;
+          endIndex = currentSelectedFileIndex;
+        } else {
+          startIndex = currentSelectedFileIndex;
+          endIndex = prevSelectedFileIndex;
+        }
+        widget.selectedFiles.toggleFilesSelection(
+          widget.files
+              .sublist(
+                startIndex + 1,
+                endIndex,
+              )
+              .toSet(),
+        );
+      }
+    }
+
+    print("currentSelectedFileIndex: $currentSelectedFileIndex "
+        "prevSelectedFileIndex: $prevSelectedFileIndex");
   }
 
   @override
@@ -41,7 +131,7 @@ class _PointerProviderState extends State<PointerProvider> {
               pointer.onLongPressStreamController.add(pointer.pointerPosition);
             },
             onHorizontalDragUpdate: (details) {
-              pointer.moveOffsetStreamController.add(details.localPosition);
+              onDragToSelect(details.localPosition);
             },
             child: Listener(
               onPointerMove: (event) {
@@ -53,7 +143,7 @@ class _PointerProviderState extends State<PointerProvider> {
                 if (_isFingerOnScreenSinceLongPress &&
                     (event.localDelta.dx.abs() > 0 &&
                         event.localDelta.dy.abs() > 0)) {
-                  pointer.moveOffsetStreamController.add(event.localPosition);
+                  onDragToSelect(event.localPosition);
                 }
               },
               onPointerDown: (event) {
@@ -61,7 +151,11 @@ class _PointerProviderState extends State<PointerProvider> {
               },
               onPointerUp: (event) {
                 _isFingerOnScreenSinceLongPress = false;
+                _isDragging = false;
                 pointer.upOffsetStreamController.add(event.localPosition);
+
+                LastSelectedFileByDragging.of(context).file.value = null;
+                currentSelectedFileIndex = -1;
               },
               child: widget.child,
             ),
@@ -69,6 +163,11 @@ class _PointerProviderState extends State<PointerProvider> {
         },
       ),
     );
+  }
+
+  void onDragToSelect(Offset offset) {
+    pointer.moveOffsetStreamController.add(offset);
+    _isDragging = true;
   }
 }
 

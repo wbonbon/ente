@@ -235,29 +235,54 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
                   ),
           ],
         ),
-        PointerProvider(
-          child: GroupGalleryGlobalKey(
-            globalKey: _groupGalleryGlobalKey,
-            child: SizedBox(
-              key: _groupGalleryGlobalKey,
-              child: _shouldRender!
-                  ? GroupGallery(
-                      photoGridSize: widget.photoGridSize,
+        widget.selectedFiles != null
+            ? LastSelectedFileByDragging(
+                child: Builder(
+                  builder: (context) {
+                    return PointerProvider(
+                      selectedFiles: widget.selectedFiles!,
                       files: _filesInGroup,
-                      tag: widget.tag,
-                      asyncLoader: widget.asyncLoader,
-                      selectedFiles: widget.selectedFiles,
-                      limitSelectionToOne: widget.limitSelectionToOne,
-                    )
-                  // todo: perf eval should we have separate PlaceHolder for Groups
-                  //  instead of creating a large cached view
-                  : PlaceHolderGridViewWidget(
-                      _filesInGroup.length,
-                      widget.photoGridSize,
-                    ),
-            ),
-          ),
-        ),
+                      child: GroupGalleryGlobalKey(
+                        globalKey: _groupGalleryGlobalKey,
+                        child: SizedBox(
+                          key: _groupGalleryGlobalKey,
+                          child: _shouldRender!
+                              ? GroupGallery(
+                                  photoGridSize: widget.photoGridSize,
+                                  files: _filesInGroup,
+                                  tag: widget.tag,
+                                  asyncLoader: widget.asyncLoader,
+                                  selectedFiles: widget.selectedFiles,
+                                  limitSelectionToOne:
+                                      widget.limitSelectionToOne,
+                                )
+                              // todo: perf eval should we have separate PlaceHolder for Groups
+                              //  instead of creating a large cached view
+                              : PlaceHolderGridViewWidget(
+                                  _filesInGroup.length,
+                                  widget.photoGridSize,
+                                ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              )
+            : _shouldRender!
+                ? GroupGallery(
+                    photoGridSize: widget.photoGridSize,
+                    files: _filesInGroup,
+                    tag: widget.tag,
+                    asyncLoader: widget.asyncLoader,
+                    selectedFiles: widget.selectedFiles,
+                    limitSelectionToOne: widget.limitSelectionToOne,
+                  )
+                // todo: perf eval should we have separate PlaceHolder for Groups
+                //  instead of creating a large cached view
+                : PlaceHolderGridViewWidget(
+                    _filesInGroup.length,
+                    widget.photoGridSize,
+                  ),
       ],
     );
   }

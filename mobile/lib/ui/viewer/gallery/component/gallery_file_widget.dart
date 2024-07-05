@@ -148,6 +148,8 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
                 if (_pointerInsideBbox == true &&
                     _pointerInsideBboxPrevValue == false) {
                   widget.selectedFiles!.toggleSelection(widget.file);
+                  LastSelectedFileByDragging.of(context).file.value =
+                      widget.file;
                 }
               },
               onError: (e) {
