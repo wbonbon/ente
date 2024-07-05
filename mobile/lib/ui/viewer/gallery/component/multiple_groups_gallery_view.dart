@@ -24,7 +24,7 @@ particular group of files.
 If a group has more than 400 files, LazyGroupGallery internally divides the
 group into multiple grid views during rendering.
  */
-class MultipleGroupsGalleryView extends StatelessWidget {
+class MultipleGroupsGalleryView extends StatefulWidget {
   final ItemScrollController itemScroller;
   final List<List<EnteFile>> groupedFiles;
   final bool disableScroll;
@@ -67,30 +67,41 @@ class MultipleGroupsGalleryView extends StatelessWidget {
   });
 
   @override
+  State<MultipleGroupsGalleryView> createState() =>
+      _MultipleGroupsGalleryViewState();
+}
+
+class _MultipleGroupsGalleryViewState extends State<MultipleGroupsGalleryView> {
+  @override
   Widget build(BuildContext context) {
+    final filesInGroup =
+        widget.groupedFiles.expand((element) => element).toList();
     final gType = GalleryContextState.of(context)!.type;
+
     return HugeListView<List<EnteFile>>(
-      controller: itemScroller,
+      files: filesInGroup,
+      selectedFiles: widget.selectedFiles,
+      controller: widget.itemScroller,
       startIndex: 0,
-      totalCount: groupedFiles.length,
-      isDraggableScrollbarEnabled: groupedFiles.length > 10,
-      disableScroll: disableScroll,
-      isScrollablePositionedList: isScrollablePositionedList,
+      totalCount: widget.groupedFiles.length,
+      isDraggableScrollbarEnabled: widget.groupedFiles.length > 10,
+      disableScroll: widget.disableScroll,
+      isScrollablePositionedList: widget.isScrollablePositionedList,
       waitBuilder: (_) {
         return const EnteLoadingWidget();
       },
       emptyResultBuilder: (_) {
         final List<Widget> children = [];
-        if (header != null) {
-          children.add(header!);
+        if (widget.header != null) {
+          children.add(widget.header!);
         }
         children.add(
           Expanded(
-            child: emptyState,
+            child: widget.emptyState,
           ),
         );
-        if (footer != null) {
-          children.add(footer!);
+        if (widget.footer != null) {
+          children.add(widget.footer!);
         }
         return Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -100,60 +111,63 @@ class MultipleGroupsGalleryView extends StatelessWidget {
       itemBuilder: (context, index) {
         Widget gallery;
         gallery = LazyGroupGallery(
-          groupedFiles[index],
+          widget.groupedFiles[index],
           index,
-          reloadEvent,
-          removalEventTypes,
-          asyncLoader,
-          selectedFiles,
-          tagPrefix,
+          widget.reloadEvent,
+          widget.removalEventTypes,
+          widget.asyncLoader,
+          widget.selectedFiles,
+          widget.tagPrefix,
           Bus.instance
               .on<GalleryIndexUpdatedEvent>()
-              .where((event) => event.tag == tagPrefix)
+              .where((event) => event.tag == widget.tagPrefix)
               .map((event) => event.index),
-          enableFileGrouping,
-          showSelectAllByDefault,
-          logTag: logTag,
+          widget.enableFileGrouping,
+          widget.showSelectAllByDefault,
+          logTag: widget.logTag,
           photoGridSize: LocalSettings.instance.getPhotoGridSize(),
-          limitSelectionToOne: limitSelectionToOne,
+          limitSelectionToOne: widget.limitSelectionToOne,
         );
-        if (header != null && index == 0) {
-          gallery = Column(children: [header!, gallery]);
+        if (widget.header != null && index == 0) {
+          gallery = Column(children: [widget.header!, gallery]);
         }
-        if (footer != null && index == groupedFiles.length - 1) {
-          gallery = Column(children: [gallery, footer!]);
+        if (widget.footer != null && index == widget.groupedFiles.length - 1) {
+          gallery = Column(children: [gallery, widget.footer!]);
         }
         return gallery;
       },
       labelTextBuilder: (int index) {
         try {
-          final EnteFile file = groupedFiles[index][0];
+          final EnteFile file = widget.groupedFiles[index][0];
           if (gType == GroupType.size) {
             return file.fileSize != null
                 ? convertBytesToReadableFormat(file.fileSize!)
                 : "";
           }
 
-          return DateFormat.yMMM(Localizations.localeOf(context).languageCode)
-              .format(
+          return DateFormat.yMMM(
+            Localizations.localeOf(context).languageCode,
+          ).format(
             DateTime.fromMicrosecondsSinceEpoch(
               file.creationTime!,
             ),
           );
         } catch (e) {
-          logger.severe("label text builder failed", e);
+          widget.logger.severe("label text builder failed", e);
           return "";
         }
       },
       thumbBackgroundColor:
           Theme.of(context).colorScheme.galleryThumbBackgroundColor,
       thumbDrawColor: Theme.of(context).colorScheme.galleryThumbDrawColor,
-      thumbPadding: header != null
+      thumbPadding: widget.header != null
           ? const EdgeInsets.only(top: 60)
           : const EdgeInsets.all(0),
-      bottomSafeArea: scrollBottomSafeArea,
+      bottomSafeArea: widget.scrollBottomSafeArea,
       firstShown: (int firstIndex) {
-        Bus.instance.fire(GalleryIndexUpdatedEvent(tagPrefix, firstIndex));
+        Bus.instance.fire(
+          GalleryIndexUpdatedEvent(widget.tagPrefix, firstIndex),
+        );
       },
     );
   }

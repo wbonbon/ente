@@ -1,6 +1,9 @@
 import 'dart:math' show max;
 
 import 'package:flutter/material.dart';
+import "package:photos/models/file/file.dart";
+import "package:photos/models/selected_files.dart";
+import "package:photos/states/pointer_provider.dart";
 import 'package:photos/ui/huge_listview/draggable_scrollbar.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
@@ -14,6 +17,10 @@ typedef HugeListViewErrorBuilder = Widget Function(
 );
 
 class HugeListView<T> extends StatefulWidget {
+  final List<EnteFile> files;
+
+  final SelectedFiles? selectedFiles;
+
   /// A [ScrollablePositionedList] controller for jumping or scrolling to an item.
   final ItemScrollController? controller;
 
@@ -66,6 +73,8 @@ class HugeListView<T> extends StatefulWidget {
 
   const HugeListView({
     Key? key,
+    required this.files,
+    required this.selectedFiles,
     this.controller,
     required this.startIndex,
     required this.totalCount,
@@ -167,30 +176,62 @@ class HugeListViewState<T> extends State<HugeListView<T>> {
             currentFirstIndex: _currentFirst(),
             isEnabled: widget.isDraggableScrollbarEnabled,
             padding: widget.thumbPadding,
-            child: ScrollablePositionedList.builder(
-              physics: widget.disableScroll
-                  ? const NeverScrollableScrollPhysics()
-                  : const BouncingScrollPhysics(),
-              itemScrollController: widget.controller,
-              itemPositionsListener: listener,
-              initialScrollIndex: widget.startIndex,
-              itemCount: max(widget.totalCount, 0),
-              itemBuilder: (context, index) {
-                return ExcludeSemantics(
-                  child: widget.itemBuilder(context, index),
-                );
-              },
+            child: LastSelectedFileByDragging(
+              filesInGroup: widget.files,
+              child: Builder(
+                builder: (context) {
+                  return PointerProvider(
+                    selectedFiles: widget.selectedFiles!,
+                    files: widget.files,
+                    child: ScrollablePositionedList.builder(
+                      physics: widget.disableScroll
+                          ? const NeverScrollableScrollPhysics()
+                          : const BouncingScrollPhysics(),
+                      itemScrollController: widget.controller,
+                      itemPositionsListener: listener,
+                      initialScrollIndex: widget.startIndex,
+                      itemCount: max(widget.totalCount, 0),
+                      itemBuilder: (context, index) {
+                        return ExcludeSemantics(
+                          child: widget.itemBuilder(context, index),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
             ),
           )
-        : ListView.builder(
-            physics: const BouncingScrollPhysics(),
-            itemCount: max(widget.totalCount, 0),
-            itemBuilder: (context, index) {
-              return ExcludeSemantics(
-                child: widget.itemBuilder(context, index),
+        : widget.selectedFiles != null
+            ? LastSelectedFileByDragging(
+                filesInGroup: widget.files,
+                child: Builder(
+                  builder: (context) {
+                    return PointerProvider(
+                      selectedFiles: widget.selectedFiles!,
+                      files: widget.files,
+                      child: ListView.builder(
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: max(widget.totalCount, 0),
+                        itemBuilder: (context, index) {
+                          return ExcludeSemantics(
+                            child: widget.itemBuilder(context, index),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              )
+            : ListView.builder(
+                physics: const BouncingScrollPhysics(),
+                itemCount: max(widget.totalCount, 0),
+                itemBuilder: (context, index) {
+                  return ExcludeSemantics(
+                    child: widget.itemBuilder(context, index),
+                  );
+                },
               );
-            },
-          );
   }
 
   /// Jump to the [position] in the list. [position] is between 0.0 (first item) and 1.0 (last item), practically currentIndex / totalCount.
