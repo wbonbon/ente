@@ -237,6 +237,7 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
         ),
         widget.selectedFiles != null
             ? LastSelectedFileByDragging(
+                filesInGroup: _filesInGroup,
                 child: Builder(
                   builder: (context) {
                     return PointerProvider(

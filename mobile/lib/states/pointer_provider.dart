@@ -1,16 +1,27 @@
 import "dart:async";
 
 import "package:flutter/widgets.dart";
+import "package:logging/logging.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/selected_files.dart";
 
 class LastSelectedFileByDragging extends InheritedWidget {
+  ///Check if this should updates on didUpdateWidget. If so, use a state varaible
+  ///and update it there on didUpdateWidget.
+  final List<EnteFile> filesInGroup;
   LastSelectedFileByDragging({
     super.key,
+    required this.filesInGroup,
     required super.child,
   });
 
-  final file = ValueNotifier<EnteFile?>(null);
+  final _indexInGroup = ValueNotifier<int>(-1);
+
+  void updateLastSelectedFile(EnteFile file) {
+    _indexInGroup.value = filesInGroup.indexOf(file);
+  }
+
+  ValueNotifier<int> get index => _indexInGroup;
 
   static LastSelectedFileByDragging? maybeOf(BuildContext context) {
     return context
@@ -25,16 +36,15 @@ class LastSelectedFileByDragging extends InheritedWidget {
 
   @override
   bool updateShouldNotify(LastSelectedFileByDragging oldWidget) =>
-      file != oldWidget.file;
+      _indexInGroup != oldWidget._indexInGroup ||
+      filesInGroup != oldWidget.filesInGroup;
 }
 
 class PointerProvider extends StatefulWidget {
   final Widget child;
+  final List<EnteFile> files;
   final SelectedFiles selectedFiles;
 
-  ///Check if this should updates on didUpdateWidget. If so, use a state varaible
-  ///and update it there on didUpdateWidget.
-  final List<EnteFile> files;
   const PointerProvider({
     super.key,
     required this.selectedFiles,
@@ -52,6 +62,7 @@ class _PointerProviderState extends State<PointerProvider> {
   bool _isDragging = false;
   int prevSelectedFileIndex = -1;
   int currentSelectedFileIndex = -1;
+  final _logger = Logger("PointerProvider");
 
   @override
   void initState() {
@@ -62,9 +73,9 @@ class _PointerProviderState extends State<PointerProvider> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     LastSelectedFileByDragging.of(context)
-        .file
+        .index
         .removeListener(swipingToSelectListener);
-    LastSelectedFileByDragging.of(context).file.addListener(
+    LastSelectedFileByDragging.of(context)._indexInGroup.addListener(
           swipingToSelectListener,
         );
   }
@@ -83,13 +94,8 @@ class _PointerProviderState extends State<PointerProvider> {
 
   void swipingToSelectListener() {
     prevSelectedFileIndex = currentSelectedFileIndex;
-    final currentSelectedFile =
-        LastSelectedFileByDragging.of(context).file.value;
-    if (currentSelectedFile == null) {
-      print("currentSelectedFile is null");
-      return;
-    }
-    currentSelectedFileIndex = widget.files.indexOf(currentSelectedFile!);
+    currentSelectedFileIndex =
+        LastSelectedFileByDragging.of(context).index.value;
     if (prevSelectedFileIndex != -1 && currentSelectedFileIndex != -1) {
       if ((currentSelectedFileIndex - prevSelectedFileIndex).abs() > 1) {
         late final int startIndex;
@@ -111,9 +117,6 @@ class _PointerProviderState extends State<PointerProvider> {
         );
       }
     }
-
-    print("currentSelectedFileIndex: $currentSelectedFileIndex "
-        "prevSelectedFileIndex: $prevSelectedFileIndex");
   }
 
   @override
@@ -154,7 +157,7 @@ class _PointerProviderState extends State<PointerProvider> {
                 _isDragging = false;
                 pointer.upOffsetStreamController.add(event.localPosition);
 
-                LastSelectedFileByDragging.of(context).file.value = null;
+                LastSelectedFileByDragging.of(context).index.value = -1;
                 currentSelectedFileIndex = -1;
               },
               child: widget.child,
