@@ -1,4 +1,5 @@
 import "package:flutter/material.dart";
+import "package:logging/logging.dart";
 import "package:photos/ui/viewer/gallery/component/group/type.dart";
 
 class GalleryContextState extends InheritedWidget {
@@ -6,8 +7,9 @@ class GalleryContextState extends InheritedWidget {
   final bool sortOrderAsc;
   final bool inSelectionMode;
   final GroupType type;
+  final scrollOffsetNotifier = ValueNotifier<double>(0);
 
-  const GalleryContextState({
+  GalleryContextState({
     this.inSelectionMode = false,
     this.type = GroupType.day,
     required this.sortOrderAsc,
@@ -15,9 +17,14 @@ class GalleryContextState extends InheritedWidget {
     Key? key,
   }) : super(key: key, child: child);
 
-//TODO: throw error with message if no GalleryContextState found
   static GalleryContextState? of(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<GalleryContextState>();
+    final res =
+        context.dependOnInheritedWidgetOfExactType<GalleryContextState>();
+    if (res == null) {
+      Logger("GalleryContextState")
+          .warning("No GalleryContextState found in context");
+    }
+    return res;
   }
 
   @override

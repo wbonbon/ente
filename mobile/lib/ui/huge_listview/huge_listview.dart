@@ -5,6 +5,7 @@ import "package:photos/models/file/file.dart";
 import "package:photos/models/selected_files.dart";
 import "package:photos/states/pointer_provider.dart";
 import 'package:photos/ui/huge_listview/draggable_scrollbar.dart';
+import "package:photos/ui/viewer/gallery/state/gallery_context_state.dart";
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 typedef HugeListViewItemBuilder<T> = Widget Function(
@@ -183,19 +184,32 @@ class HugeListViewState<T> extends State<HugeListView<T>> {
                   return PointerProvider(
                     selectedFiles: widget.selectedFiles!,
                     files: widget.files,
-                    child: ScrollablePositionedList.builder(
-                      physics: widget.disableScroll
-                          ? const NeverScrollableScrollPhysics()
-                          : const BouncingScrollPhysics(),
-                      itemScrollController: widget.controller,
-                      itemPositionsListener: listener,
-                      initialScrollIndex: widget.startIndex,
-                      itemCount: max(widget.totalCount, 0),
-                      itemBuilder: (context, index) {
-                        return ExcludeSemantics(
-                          child: widget.itemBuilder(context, index),
-                        );
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: (notification) {
+                        final galleryContextState =
+                            GalleryContextState.of(context);
+                        if (galleryContextState == null) {
+                          print("galleryContextState is null");
+                        }
+                        GalleryContextState.of(context)
+                            ?.scrollOffsetNotifier
+                            .value = notification.metrics.pixels;
+                        return true;
                       },
+                      child: ScrollablePositionedList.builder(
+                        physics: widget.disableScroll
+                            ? const NeverScrollableScrollPhysics()
+                            : const BouncingScrollPhysics(),
+                        itemScrollController: widget.controller,
+                        itemPositionsListener: listener,
+                        initialScrollIndex: widget.startIndex,
+                        itemCount: max(widget.totalCount, 0),
+                        itemBuilder: (context, index) {
+                          return ExcludeSemantics(
+                            child: widget.itemBuilder(context, index),
+                          );
+                        },
+                      ),
                     ),
                   );
                 },

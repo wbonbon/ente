@@ -5,6 +5,7 @@ import "package:logging/logging.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/selected_files.dart";
 import "package:photos/ui/viewer/gallery/component/group/lazy_group_gallery.dart";
+import "package:photos/ui/viewer/gallery/state/gallery_context_state.dart";
 
 class LastSelectedFileByDragging extends InheritedWidget {
   ///Check if this should updates on didUpdateWidget. If so, use a state varaible
@@ -59,6 +60,7 @@ class PointerProvider extends StatefulWidget {
 
 class _PointerProviderState extends State<PointerProvider> {
   late Pointer pointer;
+  late ValueNotifier<double?> galleryScrollOffsetNotifier;
   bool _isFingerOnScreenSinceLongPress = false;
   bool _isDragging = false;
   int prevSelectedFileIndex = -1;
@@ -80,6 +82,12 @@ class _PointerProviderState extends State<PointerProvider> {
     LastSelectedFileByDragging.of(context)._indexInGroup.addListener(
           swipingToSelectListener,
         );
+    assert(
+      GalleryContextState.of(context) != null,
+      "GalleryContextState is null in PointerProvider",
+    );
+    galleryScrollOffsetNotifier =
+        GalleryContextState.of(context)!.scrollOffsetNotifier;
   }
 
   @override
@@ -126,6 +134,11 @@ class _PointerProviderState extends State<PointerProvider> {
     return Pointer(
       child: Builder(
         builder: (context) {
+          final galleryScrollOffset =
+              GalleryContextState.of(context)?.scrollOffsetNotifier.value;
+          if (galleryScrollOffset == null) {
+            _logger.warning("galleryScrollOffset is null");
+          }
           pointer = Pointer.of(context);
           return GroupGalleryGlobalKey(
             globalKey: _groupGalleryGlobalKey,
@@ -144,7 +157,9 @@ class _PointerProviderState extends State<PointerProvider> {
               },
               child: Listener(
                 onPointerMove: (event) {
-                  pointer.pointerPosition = event.localPosition;
+                  pointer.pointerPosition = positionConsideringScrollOffset(
+                    event.localPosition,
+                  );
 
                   //onHorizontalDragUpdate is not called when dragging after
                   //long press without lifting finger. This is for handling only
@@ -156,12 +171,15 @@ class _PointerProviderState extends State<PointerProvider> {
                   }
                 },
                 onPointerDown: (event) {
-                  pointer.pointerPosition = event.localPosition;
+                  pointer.pointerPosition =
+                      positionConsideringScrollOffset(event.localPosition);
                 },
                 onPointerUp: (event) {
                   _isFingerOnScreenSinceLongPress = false;
                   _isDragging = false;
-                  pointer.upOffsetStreamController.add(event.localPosition);
+                  pointer.upOffsetStreamController.add(
+                    positionConsideringScrollOffset(event.localPosition),
+                  );
 
                   LastSelectedFileByDragging.of(context).index.value = -1;
                   currentSelectedFileIndex = -1;
@@ -176,8 +194,18 @@ class _PointerProviderState extends State<PointerProvider> {
   }
 
   void onDragToSelect(Offset offset) {
-    pointer.moveOffsetStreamController.add(offset);
+    pointer.moveOffsetStreamController
+        .add(positionConsideringScrollOffset(offset));
     _isDragging = true;
+  }
+
+  positionConsideringScrollOffset(
+    Offset position,
+  ) {
+    if (galleryScrollOffsetNotifier.value == null) {
+      return position;
+    }
+    return position.translate(0, galleryScrollOffsetNotifier.value!);
   }
 }
 
