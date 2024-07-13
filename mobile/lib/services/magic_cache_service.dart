@@ -77,6 +77,7 @@ class MagicCacheService {
       MagicCacheService._privateConstructor();
 
   void init(SharedPreferences preferences) {
+    _logger.info("Initializing MagicCacheService");
     _prefs = preferences;
     _updateCacheIfTheTimeHasCome();
   }
@@ -130,7 +131,7 @@ class MagicCacheService {
     try {
       _logger.info("updating magic cache");
       final magicPromptsData = await _loadMagicPrompts();
-      final magicCaches = await nonEmptyMagicResults(magicPromptsData);
+      final magicCaches = await _nonEmptyMagicResults(magicPromptsData);
       final file = File(await _getCachePath());
       if (!file.existsSync()) {
         file.createSync(recursive: true);
@@ -194,7 +195,7 @@ class MagicCacheService {
   ///Returns random non-empty magic results from magicPromptsData
   ///Length is capped at [limit], can be less than [limit] if there are not enough
   ///non-empty results
-  Future<List<MagicCache>> nonEmptyMagicResults(
+  Future<List<MagicCache>> _nonEmptyMagicResults(
     List<dynamic> magicPromptsData,
   ) async {
     //Show all magic prompts to internal users for feedback on results
