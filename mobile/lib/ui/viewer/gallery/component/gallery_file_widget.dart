@@ -9,13 +9,13 @@ import "package:photos/core/constants.dart";
 import 'package:photos/models/file/file.dart';
 import "package:photos/models/selected_files.dart";
 import "package:photos/services/app_lifecycle_service.dart";
-import "package:photos/states/pointer_provider.dart";
 import "package:photos/theme/ente_theme.dart";
 import "package:photos/ui/viewer/file/detail_page.dart";
 import "package:photos/ui/viewer/file/thumbnail_widget.dart";
 import "package:photos/ui/viewer/gallery/component/group/lazy_group_gallery.dart";
 import "package:photos/ui/viewer/gallery/gallery.dart";
 import "package:photos/ui/viewer/gallery/state/gallery_context_state.dart";
+import "package:photos/ui/viewer/gallery/swipe_to_select_helper.dart";
 import "package:photos/utils/file_util.dart";
 import "package:photos/utils/navigation_util.dart";
 
@@ -100,7 +100,7 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
               size.height,
             );
 
-            _onTapEventStreamSubscription = Pointer.of(context)
+            _onTapEventStreamSubscription = SelectionGesturesEvent.of(context)
                 .onTapStreamController
                 .stream
                 .listen((offset) {
@@ -112,10 +112,11 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
               }
             });
 
-            _onLongPressEventStreamSubscription = Pointer.of(context)
-                .onLongPressStreamController
-                .stream
-                .listen((offset) {
+            _onLongPressEventStreamSubscription =
+                SelectionGesturesEvent.of(context)
+                    .onLongPressStreamController
+                    .stream
+                    .listen((offset) {
               if (bbox.contains(offset)) {
                 _pointerInsideBbox = true;
                 widget.limitSelectionToOne
@@ -124,17 +125,21 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
               }
             });
 
-            _pointerUpEventStreamSubscription = Pointer.of(context)
-                .upOffsetStreamController
-                .stream
-                .listen((event) {
+            _pointerUpEventStreamSubscription =
+                SelectionGesturesEvent.of(context)
+                    .upOffsetStreamController
+                    .stream
+                    .listen((event) {
               if (bbox.contains(event)) {
                 if (_pointerInsideBbox) _pointerInsideBbox = false;
               }
             });
 
             _pointerPositionStreamSubscription =
-                Pointer.of(context).moveOffsetStreamController.stream.listen(
+                SelectionGesturesEvent.of(context)
+                    .moveOffsetStreamController
+                    .stream
+                    .listen(
               (event) {
                 if (widget.selectedFiles?.files.isEmpty ?? true) return;
                 _pointerInsideBboxPrevValue = _pointerInsideBbox;

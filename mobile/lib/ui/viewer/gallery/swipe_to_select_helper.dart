@@ -1,9 +1,51 @@
 import "dart:async";
 
-import "package:flutter/widgets.dart";
+import "package:flutter/material.dart";
 import "package:logging/logging.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/selected_files.dart";
+import "package:photos/ui/viewer/gallery/component/group/lazy_group_gallery.dart";
+
+class SwipeToSelectHelper extends StatefulWidget {
+  final List<EnteFile> files;
+  final SelectedFiles selectedFiles;
+  final Widget child;
+  const SwipeToSelectHelper({
+    required this.files,
+    required this.selectedFiles,
+    required this.child,
+    super.key,
+  });
+
+  @override
+  State<SwipeToSelectHelper> createState() => _SwipeToSelectHelperState();
+}
+
+class _SwipeToSelectHelperState extends State<SwipeToSelectHelper> {
+  final _groupGalleryGlobalKey = GlobalKey();
+
+  @override
+  Widget build(BuildContext context) {
+    return LastSelectedFileByDragging(
+      filesInGroup: widget.files,
+      child: Builder(
+        builder: (context) {
+          return SelectionGesturesEventProvider(
+            selectedFiles: widget.selectedFiles,
+            files: widget.files,
+            child: GroupGalleryGlobalKey(
+              globalKey: _groupGalleryGlobalKey,
+              child: SizedBox(
+                key: _groupGalleryGlobalKey,
+                child: widget.child,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
 
 class LastSelectedFileByDragging extends InheritedWidget {
   ///Check if this should updates on didUpdateWidget. If so, use a state varaible
@@ -40,12 +82,12 @@ class LastSelectedFileByDragging extends InheritedWidget {
       filesInGroup != oldWidget.filesInGroup;
 }
 
-class PointerProvider extends StatefulWidget {
+class SelectionGesturesEventProvider extends StatefulWidget {
   final Widget child;
   final List<EnteFile> files;
   final SelectedFiles selectedFiles;
 
-  const PointerProvider({
+  const SelectionGesturesEventProvider({
     super.key,
     required this.selectedFiles,
     required this.files,
@@ -53,11 +95,13 @@ class PointerProvider extends StatefulWidget {
   });
 
   @override
-  State<PointerProvider> createState() => _PointerProviderState();
+  State<SelectionGesturesEventProvider> createState() =>
+      _SelectionGesturesEventProviderState();
 }
 
-class _PointerProviderState extends State<PointerProvider> {
-  late Pointer pointer;
+class _SelectionGesturesEventProviderState
+    extends State<SelectionGesturesEventProvider> {
+  late SelectionGesturesEvent selectionGesturesEvent;
   bool _isFingerOnScreenSinceLongPress = false;
   bool _isDragging = false;
   int prevSelectedFileIndex = -1;
@@ -82,10 +126,10 @@ class _PointerProviderState extends State<PointerProvider> {
 
   @override
   void dispose() {
-    pointer.closeMoveOffsetController();
-    pointer.closeUpOffsetStreamController();
-    pointer.closeOnTapStreamController();
-    pointer.closeOnLongPressStreamController();
+    selectionGesturesEvent.closeMoveOffsetController();
+    selectionGesturesEvent.closeUpOffsetStreamController();
+    selectionGesturesEvent.closeOnTapStreamController();
+    selectionGesturesEvent.closeOnLongPressStreamController();
     widget.selectedFiles.removeListener(
       swipingToSelectListener,
     );
@@ -121,24 +165,26 @@ class _PointerProviderState extends State<PointerProvider> {
 
   @override
   Widget build(BuildContext context) {
-    return Pointer(
+    return SelectionGesturesEvent(
       child: Builder(
         builder: (context) {
-          pointer = Pointer.of(context);
+          selectionGesturesEvent = SelectionGesturesEvent.of(context);
           return GestureDetector(
             onTap: () {
-              pointer.onTapStreamController.add(pointer.pointerPosition);
+              selectionGesturesEvent.onTapStreamController
+                  .add(selectionGesturesEvent.pointerPosition);
             },
             onLongPress: () {
               _isFingerOnScreenSinceLongPress = true;
-              pointer.onLongPressStreamController.add(pointer.pointerPosition);
+              selectionGesturesEvent.onLongPressStreamController
+                  .add(selectionGesturesEvent.pointerPosition);
             },
             onHorizontalDragUpdate: (details) {
               onDragToSelect(details.localPosition);
             },
             child: Listener(
               onPointerMove: (event) {
-                pointer.pointerPosition = event.localPosition;
+                selectionGesturesEvent.pointerPosition = event.localPosition;
 
                 //onHorizontalDragUpdate is not called when dragging after
                 //long press without lifting finger. This is for handling only
@@ -150,12 +196,13 @@ class _PointerProviderState extends State<PointerProvider> {
                 }
               },
               onPointerDown: (event) {
-                pointer.pointerPosition = event.localPosition;
+                selectionGesturesEvent.pointerPosition = event.localPosition;
               },
               onPointerUp: (event) {
                 _isFingerOnScreenSinceLongPress = false;
                 _isDragging = false;
-                pointer.upOffsetStreamController.add(event.localPosition);
+                selectionGesturesEvent.upOffsetStreamController
+                    .add(event.localPosition);
 
                 LastSelectedFileByDragging.of(context).index.value = -1;
                 currentSelectedFileIndex = -1;
@@ -169,13 +216,13 @@ class _PointerProviderState extends State<PointerProvider> {
   }
 
   void onDragToSelect(Offset offset) {
-    pointer.moveOffsetStreamController.add(offset);
+    selectionGesturesEvent.moveOffsetStreamController.add(offset);
     _isDragging = true;
   }
 }
 
-class Pointer extends InheritedWidget {
-  Pointer({super.key, required super.child});
+class SelectionGesturesEvent extends InheritedWidget {
+  SelectionGesturesEvent({super.key, required super.child});
 
   //This is a List<Offset> instead of just and Offset is so that it can be final
   //and still be mutable. Need to have this as final to keep Pointer immutable
@@ -221,18 +268,18 @@ class Pointer extends InheritedWidget {
     return upOffsetStreamController.close();
   }
 
-  static Pointer? maybeOf(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<Pointer>();
+  static SelectionGesturesEvent? maybeOf(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<SelectionGesturesEvent>();
   }
 
-  static Pointer of(BuildContext context) {
-    final Pointer? result = maybeOf(context);
-    assert(result != null, 'No Pointer found in context');
+  static SelectionGesturesEvent of(BuildContext context) {
+    final SelectionGesturesEvent? result = maybeOf(context);
+    assert(result != null, 'No SelectionGesturesEvent found in context');
     return result!;
   }
 
   @override
-  bool updateShouldNotify(Pointer oldWidget) =>
+  bool updateShouldNotify(SelectionGesturesEvent oldWidget) =>
       moveOffsetStreamController != oldWidget.moveOffsetStreamController ||
       upOffsetStreamController != oldWidget.upOffsetStreamController ||
       onTapStreamController != oldWidget.onTapStreamController ||
