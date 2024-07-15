@@ -1,4 +1,11 @@
+import downloadManager from "@/new/photos/services/download";
 import { EnteFile } from "@/new/photos/types/file";
+import { EnteDrawer } from "@/new/shared/components/EnteDrawer";
+import {
+    MenuItemDivider,
+    MenuItemGroup,
+    MenuSectionTitle,
+} from "@/new/shared/components/Menu";
 import { nameAndExtension } from "@/next/file";
 import log from "@/next/log";
 import { ensure } from "@/utils/ensure";
@@ -25,17 +32,12 @@ import {
     Tabs,
     Typography,
 } from "@mui/material";
-import { EnteDrawer } from "components/EnteDrawer";
-import MenuItemDivider from "components/Menu/MenuItemDivider";
-import { MenuItemGroup } from "components/Menu/MenuItemGroup";
-import MenuSectionTitle from "components/Menu/MenuSectionTitle";
 import { CORNER_THRESHOLD, FILTER_DEFAULT_VALUES } from "constants/photoEditor";
 import { t } from "i18next";
 import { AppContext } from "pages/_app";
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { getLocalCollections } from "services/collectionService";
-import downloadManager from "services/download";
 import uploadManager from "services/upload/uploadManager";
 import { getEditorCloseConfirmationMessage } from "utils/ui";
 import ColoursMenu from "./ColoursMenu";
@@ -775,7 +777,7 @@ const canvasToFile = async (
     const [originalName] = nameAndExtension(originalFileName);
     const fileName = `${originalName}-edited.${extension}`;
 
-    log.debug(() => ({ a: "canvas => file", blob, type: blob.type, mimeType }));
+    log.debug(() => ["canvas => file", { blob, type: blob.type, mimeType }]);
 
     return new File([blob], fileName);
 };

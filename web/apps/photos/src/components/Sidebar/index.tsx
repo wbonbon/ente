@@ -1,7 +1,9 @@
+import { openAccountsManagePasskeysPage } from "@/accounts/services/passkey";
+import { initiateEmail, openURL } from "@/new/photos/utils/web";
+import { EnteDrawer } from "@/new/shared/components/EnteDrawer";
 import log from "@/next/log";
 import { savedLogs } from "@/next/log-web";
 import { customAPIHost } from "@/next/origins";
-import { openAccountsManagePasskeysPage } from "@ente/accounts/services/passkey";
 import { SpaceBetweenFlex } from "@ente/shared/components/Container";
 import { EnteLogo } from "@ente/shared/components/EnteLogo";
 import EnteSpinner from "@ente/shared/components/EnteSpinner";
@@ -10,7 +12,12 @@ import RecoveryKey from "@ente/shared/components/RecoveryKey";
 import ThemeSwitcher from "@ente/shared/components/ThemeSwitcher";
 import { PHOTOS_PAGES as PAGES } from "@ente/shared/constants/pages";
 import { useLocalState } from "@ente/shared/hooks/useLocalState";
-import { LS_KEYS, getData, setData } from "@ente/shared/storage/localStorage";
+import {
+    LS_KEYS,
+    getData,
+    setData,
+    setLSUser,
+} from "@ente/shared/storage/localStorage";
 import { THEME_COLOR } from "@ente/shared/themes/constants";
 import { downloadAsFile } from "@ente/shared/utils";
 import ArchiveOutlined from "@mui/icons-material/ArchiveOutlined";
@@ -29,7 +36,6 @@ import {
 } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import DeleteAccountModal from "components/DeleteAccountModal";
-import { EnteDrawer } from "components/EnteDrawer";
 import TwoFactorModal from "components/TwoFactor/Modal";
 import { WatchFolder } from "components/WatchFolder";
 import LinkButton from "components/pages/gallery/LinkButton";
@@ -68,7 +74,6 @@ import {
     isSubscriptionCancelled,
     isSubscriptionPastDue,
 } from "utils/billing";
-import { openLink } from "utils/common";
 import { getDownloadAppMessage } from "utils/ui";
 import { isFamilyAdmin, isPartOfFamily } from "utils/user/family";
 import { testUpload } from "../../../tests/upload.test";
@@ -164,7 +169,7 @@ const UserDetailsSection: React.FC<UserDetailsSectionProps> = ({
             setUserDetails(userDetails);
             setData(LS_KEYS.SUBSCRIPTION, userDetails.subscription);
             setData(LS_KEYS.FAMILY_DATA, userDetails.familyData);
-            setData(LS_KEYS.USER, {
+            await setLSUser({
                 ...getData(LS_KEYS.USER),
                 email: userDetails.email,
             });
@@ -589,10 +594,10 @@ const HelpSection: React.FC = () => {
     const { setDialogMessage } = useContext(AppContext);
     const { openExportModal } = useContext(GalleryContext);
 
-    const openRoadmap = () =>
-        openLink("https://github.com/ente-io/ente/discussions", true);
+    const requestFeature = () =>
+        openURL("https://github.com/ente-io/ente/discussions");
 
-    const contactSupport = () => openLink("mailto:support@ente.io", true);
+    const contactSupport = () => initiateEmail("support@ente.io");
 
     function openExport() {
         if (isElectron()) {
@@ -605,7 +610,7 @@ const HelpSection: React.FC = () => {
     return (
         <>
             <EnteMenuItem
-                onClick={openRoadmap}
+                onClick={requestFeature}
                 label={t("REQUEST_FEATURE")}
                 variant="secondary"
             />
