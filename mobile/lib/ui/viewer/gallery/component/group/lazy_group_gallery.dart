@@ -14,7 +14,6 @@ import "package:photos/ui/viewer/gallery/component/group/group_header_widget.dar
 import "package:photos/ui/viewer/gallery/component/group/type.dart";
 import 'package:photos/ui/viewer/gallery/gallery.dart';
 import "package:photos/ui/viewer/gallery/state/gallery_context_state.dart";
-import "package:photos/ui/viewer/gallery/swipe_to_select_helper.dart";
 
 class LazyGroupGallery extends StatefulWidget {
   final List<EnteFile> files;
@@ -234,41 +233,21 @@ class _LazyGroupGalleryState extends State<LazyGroupGallery> {
                   ),
           ],
         ),
-        widget.selectedFiles != null
-            ? SwipeToSelectHelper(
+        _shouldRender!
+            ? GroupGallery(
+                photoGridSize: widget.photoGridSize,
                 files: _filesInGroup,
-                selectedFiles: widget.selectedFiles!,
-                child: _shouldRender!
-                    ? GroupGallery(
-                        photoGridSize: widget.photoGridSize,
-                        files: _filesInGroup,
-                        tag: widget.tag,
-                        asyncLoader: widget.asyncLoader,
-                        selectedFiles: widget.selectedFiles,
-                        limitSelectionToOne: widget.limitSelectionToOne,
-                      )
-                    // todo: perf eval should we have separate PlaceHolder for Groups
-                    //  instead of creating a large cached view
-                    : PlaceHolderGridViewWidget(
-                        _filesInGroup.length,
-                        widget.photoGridSize,
-                      ),
+                tag: widget.tag,
+                asyncLoader: widget.asyncLoader,
+                selectedFiles: widget.selectedFiles,
+                limitSelectionToOne: widget.limitSelectionToOne,
               )
-            : _shouldRender!
-                ? GroupGallery(
-                    photoGridSize: widget.photoGridSize,
-                    files: _filesInGroup,
-                    tag: widget.tag,
-                    asyncLoader: widget.asyncLoader,
-                    selectedFiles: widget.selectedFiles,
-                    limitSelectionToOne: widget.limitSelectionToOne,
-                  )
-                // todo: perf eval should we have separate PlaceHolder for Groups
-                //  instead of creating a large cached view
-                : PlaceHolderGridViewWidget(
-                    _filesInGroup.length,
-                    widget.photoGridSize,
-                  ),
+            // todo: perf eval should we have separate PlaceHolder for Groups
+            //  instead of creating a large cached view
+            : PlaceHolderGridViewWidget(
+                _filesInGroup.length,
+                widget.photoGridSize,
+              ),
       ],
     );
   }

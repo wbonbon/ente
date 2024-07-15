@@ -8,7 +8,7 @@ import "package:photos/ui/viewer/gallery/component/group/lazy_group_gallery.dart
 
 class SwipeToSelectHelper extends StatefulWidget {
   final List<EnteFile> files;
-  final SelectedFiles selectedFiles;
+  final SelectedFiles? selectedFiles;
   final Widget child;
   const SwipeToSelectHelper({
     required this.files,
@@ -26,24 +26,26 @@ class _SwipeToSelectHelperState extends State<SwipeToSelectHelper> {
 
   @override
   Widget build(BuildContext context) {
-    return LastSelectedFileByDragging(
-      filesInGroup: widget.files,
-      child: Builder(
-        builder: (context) {
-          return SelectionGesturesEventProvider(
-            selectedFiles: widget.selectedFiles,
-            files: widget.files,
-            child: GroupGalleryGlobalKey(
-              globalKey: _groupGalleryGlobalKey,
-              child: SizedBox(
-                key: _groupGalleryGlobalKey,
-                child: widget.child,
-              ),
+    return widget.selectedFiles == null
+        ? widget.child
+        : LastSelectedFileByDragging(
+            filesInGroup: widget.files,
+            child: Builder(
+              builder: (context) {
+                return SelectionGesturesEventProvider(
+                  selectedFiles: widget.selectedFiles!,
+                  files: widget.files,
+                  child: GroupGalleryGlobalKey(
+                    globalKey: _groupGalleryGlobalKey,
+                    child: SizedBox(
+                      key: _groupGalleryGlobalKey,
+                      child: widget.child,
+                    ),
+                  ),
+                );
+              },
             ),
           );
-        },
-      ),
-    );
   }
 }
 
