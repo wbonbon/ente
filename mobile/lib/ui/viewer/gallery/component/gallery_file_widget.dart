@@ -281,6 +281,9 @@ class _GalleryFileWidgetState extends State<GalleryFileWidget> {
     } else if (AppLifecycleService.instance.mediaExtensionAction.action ==
         IntentAction.main) {
       HapticFeedback.lightImpact();
+      LastSelectedFileByDragging.of(context).updateLastSelectedFile(
+        widget.file,
+      ); // This is used to show the selection box
       _toggleFileSelection(file);
     }
   }
