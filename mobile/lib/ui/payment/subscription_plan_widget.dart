@@ -19,7 +19,7 @@ class SubscriptionPlanWidget extends StatelessWidget {
   String _displayPrice(BuildContext context) {
     // todo: l10n pricing part
     final result = price + (period.isNotEmpty ? " / " + period : "");
-    return price.isNotEmpty ? result : S.of(context).freeTrial;
+    return price.isNotEmpty ? result : S.of(context).free;
   }
 
   @override

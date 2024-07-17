@@ -558,7 +558,7 @@
   "lightTheme": "Light",
   "darkTheme": "Dark",
   "systemTheme": "System",
-  "freeTrial": "Free trial",
+  "free": "Free",
   "selectYourPlan": "Select your plan",
   "enteSubscriptionPitch": "Ente preserves your memories, so they're always available to you, even if you lose your device.",
   "enteSubscriptionShareWithFamily": "Your family can be added to your plan as well.",
@@ -572,10 +572,10 @@
   },
   "faqs": "FAQs",
   "renewsOn": "Subscription renews on {endDate}",
-  "freeTrialValidTill": "Free trial valid till {endDate}",
+
   "validTill": "Valid till {endDate}",
   "addOnValidTill": "Your {storageAmount} add-on is valid till {endDate}",
-  "playStoreFreeTrialValidTill": "Free trial valid till {endDate}.\nYou can choose a paid plan afterwards.",
+  "freePlanValidForever": "{storageAmount} free forever",
   "subWillBeCancelledOn": "Your subscription will be cancelled on {endDate}",
   "subscription": "Subscription",
   "paymentDetails": "Payment details",
@@ -642,7 +642,7 @@
       }
     }
   },
-  "continueOnFreeTrial": "Continue on free trial",
+  "continueWithFreePlan": "Continue with free plan",
   "areYouSureYouWantToExit": "Are you sure you want to exit?",
   "thankYou": "Thank you",
   "failedToVerifyPaymentStatus": "Failed to verify payment status",

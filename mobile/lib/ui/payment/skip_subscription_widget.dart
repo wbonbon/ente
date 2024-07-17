@@ -48,7 +48,7 @@ class SkipSubscriptionWidget extends StatelessWidget {
                 .verifySubscription(freeProductID, "", paymentProvider: "ente"),
           );
         },
-        child: Text(S.of(context).continueOnFreeTrial),
+        child: Text(S.of(context).continueWithFreePlan),
       ),
     );
   }

@@ -3984,11 +3984,11 @@ class S {
     );
   }
 
-  /// `Free trial`
-  String get freeTrial {
+  /// `Free`
+  String get free {
     return Intl.message(
-      'Free trial',
-      name: 'freeTrial',
+      'Free',
+      name: 'free',
       desc: '',
       args: [],
     );
@@ -4054,16 +4054,6 @@ class S {
     );
   }
 
-  /// `Free trial valid till {endDate}`
-  String freeTrialValidTill(Object endDate) {
-    return Intl.message(
-      'Free trial valid till $endDate',
-      name: 'freeTrialValidTill',
-      desc: '',
-      args: [endDate],
-    );
-  }
-
   /// `Valid till {endDate}`
   String validTill(Object endDate) {
     return Intl.message(
@@ -4084,13 +4074,13 @@ class S {
     );
   }
 
-  /// `Free trial valid till {endDate}.\nYou can choose a paid plan afterwards.`
-  String playStoreFreeTrialValidTill(Object endDate) {
+  /// `{storageAmount} free forever`
+  String freePlanValidForever(Object storageAmount) {
     return Intl.message(
-      'Free trial valid till $endDate.\nYou can choose a paid plan afterwards.',
-      name: 'playStoreFreeTrialValidTill',
+      '$storageAmount free forever',
+      name: 'freePlanValidForever',
       desc: '',
-      args: [endDate],
+      args: [storageAmount],
     );
   }
 
@@ -4475,11 +4465,11 @@ class S {
     );
   }
 
-  /// `Continue on free trial`
-  String get continueOnFreeTrial {
+  /// `Continue with free plan`
+  String get continueWithFreePlan {
     return Intl.message(
-      'Continue on free trial',
-      name: 'continueOnFreeTrial',
+      'Continue with free plan',
+      name: 'continueWithFreePlan',
       desc: '',
       args: [],
     );

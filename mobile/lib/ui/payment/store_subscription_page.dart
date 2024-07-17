@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import "package:flutter/cupertino.dart";
 import "package:flutter/foundation.dart";
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
@@ -496,7 +495,7 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
       planWidgets.add(
         SubscriptionPlanWidget(
           storage: _freePlan.storage,
-          price: S.of(context).freeTrial,
+          price: S.of(context).free,
           period: "",
           isActive: true,
         ),
