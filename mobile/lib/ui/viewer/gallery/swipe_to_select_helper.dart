@@ -5,6 +5,7 @@ import "package:logging/logging.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/selected_files.dart";
 import "package:photos/ui/viewer/gallery/component/group/lazy_group_gallery.dart";
+import "package:photos/ui/viewer/gallery/component/multiple_groups_gallery_view.dart";
 
 class SwipeToSelectHelper extends StatefulWidget {
   final List<EnteFile> files;
@@ -102,11 +103,15 @@ class SelectionGesturesEventProvider extends StatefulWidget {
 class _SelectionGesturesEventProviderState
     extends State<SelectionGesturesEventProvider> {
   late SelectionGesturesEvent selectionGesturesEvent;
+  late SwipeToSelectGalleryScroll swipeToSelectGalleryScroll;
   bool _isFingerOnScreenSinceLongPress = false;
   bool _isDragging = false;
   int prevSelectedFileIndex = -1;
   int currentSelectedFileIndex = -1;
   final _logger = Logger("PointerProvider");
+  static const kUpThreshold = 180.0;
+  static const kDownThreshold = 240.0;
+  static const kSelectionSheetBuffer = 120.0;
 
   @override
   void initState() {
@@ -165,10 +170,13 @@ class _SelectionGesturesEventProviderState
 
   @override
   Widget build(BuildContext context) {
+    final heightOfScreen = MediaQuery.sizeOf(context).height;
+
     return SelectionGesturesEvent(
       child: Builder(
         builder: (context) {
           selectionGesturesEvent = SelectionGesturesEvent.of(context);
+          swipeToSelectGalleryScroll = SwipeToSelectGalleryScroll.of(context);
           return GestureDetector(
             onTap: () {
               selectionGesturesEvent.onTapStreamController
@@ -193,6 +201,8 @@ class _SelectionGesturesEventProviderState
                     (event.localDelta.dx.abs() > 0 &&
                         event.localDelta.dy.abs() > 0)) {
                   onDragToSelect(event.localPosition);
+
+                  sinkScrollEvent(event.position.dy, heightOfScreen);
                 }
               },
               onPointerDown: (event) {
@@ -218,6 +228,28 @@ class _SelectionGesturesEventProviderState
   void onDragToSelect(Offset offset) {
     selectionGesturesEvent.moveOffsetStreamController.add(offset);
     _isDragging = true;
+  }
+
+  void sinkScrollEvent(double yGlobalPos, double heightOfScreen) {
+    final pixelsBeyondThresholdDown =
+        yGlobalPos - (heightOfScreen - kDownThreshold);
+    final pixelsBeyondThresholdUp = yGlobalPos - kUpThreshold;
+
+    if (pixelsBeyondThresholdUp < 0) {
+      print(
+        "up with strength: ${pixelsBeyondThresholdUp / kUpThreshold}",
+      );
+      swipeToSelectGalleryScroll.streamController.sink
+          .add(pixelsBeyondThresholdUp / kUpThreshold);
+    }
+    if (pixelsBeyondThresholdDown > 0) {
+      print(
+        "down with strength: ${(pixelsBeyondThresholdDown + kSelectionSheetBuffer) / kDownThreshold}",
+      );
+      swipeToSelectGalleryScroll.streamController.sink.add(
+        (pixelsBeyondThresholdDown + kSelectionSheetBuffer) / kDownThreshold,
+      );
+    }
   }
 }
 

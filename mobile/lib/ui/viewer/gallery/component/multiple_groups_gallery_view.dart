@@ -1,3 +1,5 @@
+import "dart:async";
+
 import "package:flutter/material.dart";
 import "package:intl/intl.dart";
 import "package:logging/logging.dart";
@@ -69,92 +71,119 @@ class MultipleGroupsGalleryView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gType = GalleryContextState.of(context)!.type;
-    return HugeListView<List<EnteFile>>(
-      controller: itemScroller,
-      startIndex: 0,
-      totalCount: groupedFiles.length,
-      isDraggableScrollbarEnabled: groupedFiles.length > 10,
-      disableScroll: disableScroll,
-      isScrollablePositionedList: isScrollablePositionedList,
-      waitBuilder: (_) {
-        return const EnteLoadingWidget();
-      },
-      emptyResultBuilder: (_) {
-        final List<Widget> children = [];
-        if (header != null) {
-          children.add(header!);
-        }
-        children.add(
-          Expanded(
-            child: emptyState,
-          ),
-        );
-        if (footer != null) {
-          children.add(footer!);
-        }
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: children,
-        );
-      },
-      itemBuilder: (context, index) {
-        Widget gallery;
-        gallery = LazyGroupGallery(
-          groupedFiles[index],
-          index,
-          reloadEvent,
-          removalEventTypes,
-          asyncLoader,
-          selectedFiles,
-          tagPrefix,
-          Bus.instance
-              .on<GalleryIndexUpdatedEvent>()
-              .where((event) => event.tag == tagPrefix)
-              .map((event) => event.index),
-          enableFileGrouping,
-          showSelectAllByDefault,
-          logTag: logTag,
-          photoGridSize: LocalSettings.instance.getPhotoGridSize(),
-          limitSelectionToOne: limitSelectionToOne,
-        );
-        if (header != null && index == 0) {
-          gallery = Column(children: [header!, gallery]);
-        }
-        if (footer != null && index == groupedFiles.length - 1) {
-          gallery = Column(children: [gallery, footer!]);
-        }
-        return gallery;
-      },
-      labelTextBuilder: (int index) {
-        try {
-          final EnteFile file = groupedFiles[index][0];
-          if (gType == GroupType.size) {
-            return file.fileSize != null
-                ? convertBytesToReadableFormat(file.fileSize!)
-                : "";
+    return SwipeToSelectGalleryScroll(
+      child: HugeListView<List<EnteFile>>(
+        controller: itemScroller,
+        startIndex: 0,
+        totalCount: groupedFiles.length,
+        isDraggableScrollbarEnabled: groupedFiles.length > 10,
+        disableScroll: disableScroll,
+        isScrollablePositionedList: isScrollablePositionedList,
+        waitBuilder: (_) {
+          return const EnteLoadingWidget();
+        },
+        emptyResultBuilder: (_) {
+          final List<Widget> children = [];
+          if (header != null) {
+            children.add(header!);
           }
-
-          return DateFormat.yMMM(Localizations.localeOf(context).languageCode)
-              .format(
-            DateTime.fromMicrosecondsSinceEpoch(
-              file.creationTime!,
+          children.add(
+            Expanded(
+              child: emptyState,
             ),
           );
-        } catch (e) {
-          logger.severe("label text builder failed", e);
-          return "";
-        }
-      },
-      thumbBackgroundColor:
-          Theme.of(context).colorScheme.galleryThumbBackgroundColor,
-      thumbDrawColor: Theme.of(context).colorScheme.galleryThumbDrawColor,
-      thumbPadding: header != null
-          ? const EdgeInsets.only(top: 60)
-          : const EdgeInsets.all(0),
-      bottomSafeArea: scrollBottomSafeArea,
-      firstShown: (int firstIndex) {
-        Bus.instance.fire(GalleryIndexUpdatedEvent(tagPrefix, firstIndex));
-      },
+          if (footer != null) {
+            children.add(footer!);
+          }
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: children,
+          );
+        },
+        itemBuilder: (context, index) {
+          Widget gallery;
+          gallery = LazyGroupGallery(
+            groupedFiles[index],
+            index,
+            reloadEvent,
+            removalEventTypes,
+            asyncLoader,
+            selectedFiles,
+            tagPrefix,
+            Bus.instance
+                .on<GalleryIndexUpdatedEvent>()
+                .where((event) => event.tag == tagPrefix)
+                .map((event) => event.index),
+            enableFileGrouping,
+            showSelectAllByDefault,
+            logTag: logTag,
+            photoGridSize: LocalSettings.instance.getPhotoGridSize(),
+            limitSelectionToOne: limitSelectionToOne,
+          );
+          if (header != null && index == 0) {
+            gallery = Column(children: [header!, gallery]);
+          }
+          if (footer != null && index == groupedFiles.length - 1) {
+            gallery = Column(children: [gallery, footer!]);
+          }
+          return gallery;
+        },
+        labelTextBuilder: (int index) {
+          try {
+            final EnteFile file = groupedFiles[index][0];
+            if (gType == GroupType.size) {
+              return file.fileSize != null
+                  ? convertBytesToReadableFormat(file.fileSize!)
+                  : "";
+            }
+
+            return DateFormat.yMMM(Localizations.localeOf(context).languageCode)
+                .format(
+              DateTime.fromMicrosecondsSinceEpoch(
+                file.creationTime!,
+              ),
+            );
+          } catch (e) {
+            logger.severe("label text builder failed", e);
+            return "";
+          }
+        },
+        thumbBackgroundColor:
+            Theme.of(context).colorScheme.galleryThumbBackgroundColor,
+        thumbDrawColor: Theme.of(context).colorScheme.galleryThumbDrawColor,
+        thumbPadding: header != null
+            ? const EdgeInsets.only(top: 60)
+            : const EdgeInsets.all(0),
+        bottomSafeArea: scrollBottomSafeArea,
+        firstShown: (int firstIndex) {
+          Bus.instance.fire(GalleryIndexUpdatedEvent(tagPrefix, firstIndex));
+        },
+      ),
     );
+  }
+}
+
+class SwipeToSelectGalleryScroll extends InheritedWidget {
+  final StreamController<double> streamController = StreamController();
+
+  SwipeToSelectGalleryScroll({
+    required Widget child,
+    Key? key,
+  }) : super(key: key, child: child);
+
+  static SwipeToSelectGalleryScroll? maybeOf(BuildContext context) {
+    return context
+        .dependOnInheritedWidgetOfExactType<SwipeToSelectGalleryScroll>();
+  }
+
+  static SwipeToSelectGalleryScroll of(BuildContext context) {
+    final SwipeToSelectGalleryScroll? result = maybeOf(context);
+    assert(result != null, 'No SwipeToSelectGalleryScroll found in context');
+    return result!;
+  }
+
+  @override
+  bool updateShouldNotify(SwipeToSelectGalleryScroll oldWidget) {
+    return streamController != oldWidget.streamController;
   }
 }

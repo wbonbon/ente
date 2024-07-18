@@ -1,7 +1,10 @@
+import "dart:async";
 import 'dart:math' show max;
 
 import 'package:flutter/material.dart';
 import 'package:photos/ui/huge_listview/draggable_scrollbar.dart';
+import "package:photos/ui/viewer/gallery/component/multiple_groups_gallery_view.dart";
+import "package:photos/utils/debouncer.dart";
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 typedef HugeListViewItemBuilder<T> = Widget Function(
@@ -94,6 +97,14 @@ class HugeListViewState<T> extends State<HugeListView<T>> {
   final listener = ItemPositionsListener.create();
   int lastIndexJump = -1;
   dynamic error;
+  final scrollOffsetController = ScrollOffsetController();
+  final scrollController = ScrollController();
+  double currentScrollOffset = 0.0;
+  StreamSubscription<double>? shouldScrollGalleryEventSubscription;
+  final debouncer = Debouncer(
+    const Duration(milliseconds: 100),
+    executionInterval: const Duration(milliseconds: 100),
+  );
 
   @override
   void initState() {
@@ -105,8 +116,31 @@ class HugeListViewState<T> extends State<HugeListView<T>> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (shouldScrollGalleryEventSubscription != null) {
+      shouldScrollGalleryEventSubscription!.cancel();
+    }
+    shouldScrollGalleryEventSubscription =
+        SwipeToSelectGalleryScroll.of(context)
+            .streamController
+            .stream
+            .listen((factor) {
+      debouncer.run(() async {
+        final double newOffset = (factor * 70);
+        await scrollOffsetController.animateScroll(
+          offset: newOffset,
+          duration: const Duration(milliseconds: 100),
+        );
+      });
+    });
+  }
+
+  @override
   void dispose() {
     listener.itemPositions.removeListener(_sendScroll);
+    shouldScrollGalleryEventSubscription?.cancel();
+    SwipeToSelectGalleryScroll.of(context).streamController.close();
     super.dispose();
   }
 
@@ -136,61 +170,69 @@ class HugeListViewState<T> extends State<HugeListView<T>> {
       return widget.emptyResultBuilder!(context);
     }
 
-    return widget.isScrollablePositionedList
-        ? DraggableScrollbar(
-            key: scrollKey,
-            totalCount: widget.totalCount,
-            initialScrollIndex: widget.startIndex,
-            onChange: (position) {
-              final int currentIndex = _currentFirst();
-              final int floorIndex = (position * widget.totalCount).floor();
-              final int cielIndex = (position * widget.totalCount).ceil();
-              int nextIndexToJump;
-              if (floorIndex != currentIndex && floorIndex > currentIndex) {
-                nextIndexToJump = floorIndex;
-              } else if (cielIndex != currentIndex &&
-                  cielIndex < currentIndex) {
-                nextIndexToJump = floorIndex;
-              } else {
-                return;
-              }
-              if (lastIndexJump != nextIndexToJump) {
-                lastIndexJump = nextIndexToJump;
-                widget.controller?.jumpTo(index: nextIndexToJump);
-              }
-            },
-            labelTextBuilder: widget.labelTextBuilder,
-            backgroundColor: widget.thumbBackgroundColor,
-            drawColor: widget.thumbDrawColor,
-            heightScrollThumb: widget.thumbHeight,
-            bottomSafeArea: widget.bottomSafeArea,
-            currentFirstIndex: _currentFirst(),
-            isEnabled: widget.isDraggableScrollbarEnabled,
-            padding: widget.thumbPadding,
-            child: ScrollablePositionedList.builder(
-              physics: widget.disableScroll
-                  ? const NeverScrollableScrollPhysics()
-                  : const BouncingScrollPhysics(),
-              itemScrollController: widget.controller,
-              itemPositionsListener: listener,
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        currentScrollOffset = notification.metrics.pixels;
+        return false;
+      },
+      child: widget.isScrollablePositionedList
+          ? DraggableScrollbar(
+              key: scrollKey,
+              totalCount: widget.totalCount,
               initialScrollIndex: widget.startIndex,
+              onChange: (position) {
+                final int currentIndex = _currentFirst();
+                final int floorIndex = (position * widget.totalCount).floor();
+                final int cielIndex = (position * widget.totalCount).ceil();
+                int nextIndexToJump;
+                if (floorIndex != currentIndex && floorIndex > currentIndex) {
+                  nextIndexToJump = floorIndex;
+                } else if (cielIndex != currentIndex &&
+                    cielIndex < currentIndex) {
+                  nextIndexToJump = floorIndex;
+                } else {
+                  return;
+                }
+                if (lastIndexJump != nextIndexToJump) {
+                  lastIndexJump = nextIndexToJump;
+                  widget.controller?.jumpTo(index: nextIndexToJump);
+                }
+              },
+              labelTextBuilder: widget.labelTextBuilder,
+              backgroundColor: widget.thumbBackgroundColor,
+              drawColor: widget.thumbDrawColor,
+              heightScrollThumb: widget.thumbHeight,
+              bottomSafeArea: widget.bottomSafeArea,
+              currentFirstIndex: _currentFirst(),
+              isEnabled: widget.isDraggableScrollbarEnabled,
+              padding: widget.thumbPadding,
+              child: ScrollablePositionedList.builder(
+                physics: widget.disableScroll
+                    ? const NeverScrollableScrollPhysics()
+                    : const BouncingScrollPhysics(),
+                scrollOffsetController: scrollOffsetController,
+                itemScrollController: widget.controller,
+                itemPositionsListener: listener,
+                initialScrollIndex: widget.startIndex,
+                itemCount: max(widget.totalCount, 0),
+                itemBuilder: (context, index) {
+                  return ExcludeSemantics(
+                    child: widget.itemBuilder(context, index),
+                  );
+                },
+              ),
+            )
+          : ListView.builder(
+              physics: const BouncingScrollPhysics(),
               itemCount: max(widget.totalCount, 0),
+              controller: scrollController,
               itemBuilder: (context, index) {
                 return ExcludeSemantics(
                   child: widget.itemBuilder(context, index),
                 );
               },
             ),
-          )
-        : ListView.builder(
-            physics: const BouncingScrollPhysics(),
-            itemCount: max(widget.totalCount, 0),
-            itemBuilder: (context, index) {
-              return ExcludeSemantics(
-                child: widget.itemBuilder(context, index),
-              );
-            },
-          );
+    );
   }
 
   /// Jump to the [position] in the list. [position] is between 0.0 (first item) and 1.0 (last item), practically currentIndex / totalCount.
