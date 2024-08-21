@@ -49,34 +49,44 @@ class FileDataService {
   Future<FileDataResponse> getFilesData(
     Set<int> fileIds, {
     DataType type = DataType.mlData,
+    int retries = 3,
+    Duration timeout = const Duration(seconds: 10),
   }) async {
-    try {
-      final res = await _dio.post(
-        "/files/data/fetch",
-        data: {
-          "fileIDs": fileIds.toList(),
-          "type": type.toJson(),
-        },
-      );
-      final remoteEntries = res.data['data'] as List;
-      final pendingIndexFiles = res.data['pendingIndexFileIDs'] as List;
-      final errFileIds = res.data['errFileIDs'] as List;
+    int attempt = 0;
+    while (attempt < retries) {
+      try {
+        final res = await _dio.post(
+          "/files/data/fetch",
+          data: {
+            "fileIDs": fileIds.toList(),
+            "type": type.toJson(),
+          },
+        ).timeout(timeout);
 
-      final List<EncryptedFileData> encFileData = <EncryptedFileData>[];
-      for (var entry in remoteEntries) {
-        encFileData.add(EncryptedFileData.fromMap(entry));
+        final remoteEntries = res.data['data'] as List;
+        final pendingIndexFiles = res.data['pendingIndexFileIDs'] as List;
+        final errFileIds = res.data['errFileIDs'] as List;
+
+        final List<EncryptedFileData> encFileData = <EncryptedFileData>[];
+        for (var entry in remoteEntries) {
+          encFileData.add(EncryptedFileData.fromMap(entry));
+        }
+        final fileIdToDataMap = await decryptRemoteFileData(encFileData);
+        return FileDataResponse(
+          fileIdToDataMap,
+          fetchErrorFileIDs: Set<int>.from(errFileIds.map((x) => x as int)),
+          pendingIndexFileIDs:
+              Set<int>.from(pendingIndexFiles.map((x) => x as int)),
+        );
+      } catch (e, s) {
+        _logger.severe("Failed to get embeddings on attempt $attempt", e, s);
+        if (attempt >= retries - 1) {
+          rethrow;
+        }
+        attempt++;
       }
-      final fileIdToDataMap = await decryptRemoteFileData(encFileData);
-      return FileDataResponse(
-        fileIdToDataMap,
-        fetchErrorFileIDs: Set<int>.from(errFileIds.map((x) => x as int)),
-        pendingIndexFileIDs:
-            Set<int>.from(pendingIndexFiles.map((x) => x as int)),
-      );
-    } catch (e, s) {
-      _logger.severe("Failed to get embeddings", e, s);
-      rethrow;
     }
+    throw Exception("Failed to get embeddings after $retries attempts");
   }
 
   Future<Map<int, FileDataEntity>> decryptRemoteFileData(
