@@ -1,7 +1,9 @@
 import "dart:async";
 
+import "package:flutter/foundation.dart" show kDebugMode;
 import "package:flutter/material.dart";
 import "package:intl/intl.dart";
+import "package:photos/ente_theme_data.dart";
 import "package:photos/generated/l10n.dart";
 import "package:photos/l10n/l10n.dart";
 import "package:photos/service_locator.dart";
@@ -18,6 +20,7 @@ import "package:photos/ui/common/web_page.dart";
 import "package:photos/ui/components/buttons/button_widget.dart";
 import "package:photos/ui/components/buttons/icon_button_widget.dart";
 import "package:photos/ui/components/captioned_text_widget.dart";
+import "package:photos/ui/components/expandable_menu_item_widget.dart";
 import "package:photos/ui/components/menu_item_widget/menu_item_widget.dart";
 import "package:photos/ui/components/menu_section_description_widget.dart";
 import "package:photos/ui/components/menu_section_title.dart";
@@ -30,6 +33,8 @@ import "package:photos/ui/settings/ml/ml_user_dev_screen.dart";
 import "package:photos/utils/ml_util.dart";
 import "package:photos/utils/network_util.dart";
 import "package:photos/utils/wakelock_util.dart";
+import "package:syncfusion_flutter_core/theme.dart";
+import "package:syncfusion_flutter_sliders/sliders.dart";
 
 class MachineLearningSettingsPage extends StatefulWidget {
   const MachineLearningSettingsPage({super.key});
@@ -258,6 +263,57 @@ class _MachineLearningSettingsPageState
             singleBorderRadius: 8,
             alignCaptionedTextToLeft: true,
             isGestureDetectorDisabled: true,
+          ),
+        if (hasEnabled && kDebugMode)
+          const SizedBox(
+            height: 12,
+          ),
+        if (hasEnabled && kDebugMode)
+          ExpandableMenuItemWidget(
+            title: "Advanced configuration",
+            selectionOptionsWidget: Column(
+              children: [
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      "Magic search sensitivity",
+                      style: Theme.of(context)
+                          .colorScheme
+                          .enteTheme
+                          .textTheme
+                          .body,
+                    ),
+                  ),
+                ),
+                SfSliderTheme(
+                  data: SfSliderThemeData(
+                    activeTrackHeight: 4,
+                    inactiveTrackHeight: 2,
+                    inactiveTrackColor: Colors.grey[900],
+                    activeTrackColor: const Color.fromRGBO(45, 150, 98, 1),
+                    thumbColor: const Color.fromRGBO(45, 150, 98, 1),
+                    thumbRadius: 10,
+                    tooltipBackgroundColor: Colors.grey[900],
+                  ),
+                  child: SfSlider(
+                    onChanged: (value) {
+                      setState(() {
+                        SemanticSearchService
+                            .instance.minimumClipSimilarityThreshold = value;
+                      });
+                    },
+                    value: SemanticSearchService
+                        .instance.minimumClipSimilarityThreshold,
+                    enableTooltip: true,
+                    stepSize: SemanticSearchService.thresholdStepsize,
+                    min: SemanticSearchService.lowestThreshold,
+                    max: SemanticSearchService.highestThreshold,
+                  ),
+                ),
+              ],
+            ),
+            leadingIcon: Icons.settings_outlined,
           ),
         const SizedBox(
           height: 12,

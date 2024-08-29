@@ -32,7 +32,10 @@ class SemanticSearchService {
 
   static final Computer _computer = Computer.shared();
   final LRUMap<String, List<double>> _queryCache = LRUMap(20);
-  static const kMinimumSimilarityThreshold = 0.175;
+  double minimumClipSimilarityThreshold = 0.175;
+  static const lowestThreshold = 0.125;
+  static const thresholdStepsize = 0.0125;
+  static const highestThreshold = 0.225;
 
   bool _hasInitialized = false;
   bool _textModelIsLoaded = false;
@@ -113,15 +116,14 @@ class SemanticSearchService {
   }
 
   Future<List<EnteFile>> getMatchingFiles(
-    String query, {
-    double? scoreThreshold,
-  }) async {
+    String query,
+  ) async {
     bool showScore = false;
     // if the query starts with 0.xxx, the split the query to get score threshold and actual query
     if (query.startsWith(RegExp(r"0\.\d+"))) {
       final parts = query.split(" ");
       if (parts.length > 1) {
-        scoreThreshold = double.parse(parts[0]);
+        minimumClipSimilarityThreshold = double.parse(parts[0]);
         query = parts.sublist(1).join(" ");
         showScore = true;
       }
@@ -130,7 +132,7 @@ class SemanticSearchService {
 
     final queryResults = await _getSimilarities(
       textEmbedding,
-      minimumSimilarity: scoreThreshold,
+      minimumClipSimilarityThreshold,
     );
 
     // print query for top ten scores
@@ -179,13 +181,13 @@ class SemanticSearchService {
 
   Future<List<int>> getMatchingFileIDs(
     String query,
-    double minimumSimilarity,
+    double minimumSimilarityThreshold,
   ) async {
     final textEmbedding = await _getTextEmbedding(query);
 
     final queryResults = await _getSimilarities(
       textEmbedding,
-      minimumSimilarity: minimumSimilarity,
+      minimumSimilarityThreshold,
     );
 
     final queryResultIds = <int>[];
@@ -263,9 +265,9 @@ class SemanticSearchService {
   }
 
   Future<List<QueryResult>> _getSimilarities(
-    List<double> textEmbedding, {
-    double? minimumSimilarity,
-  }) async {
+    List<double> textEmbedding,
+    double minimumSimilarity,
+  ) async {
     final startTime = DateTime.now();
     final embeddings = await getClipEmbeddings();
     final List<QueryResult> queryResults = await _computer.compute(
@@ -313,8 +315,7 @@ List<QueryResult> computeBulkSimilarities(Map args) {
   final queryResults = <QueryResult>[];
   final imageEmbeddings = args["imageEmbeddings"] as List<ClipEmbedding>;
   final textEmbedding = args["textEmbedding"] as List<double>;
-  final minimumSimilarity = args["minimumSimilarity"] ??
-      SemanticSearchService.kMinimumSimilarityThreshold;
+  final minimumSimilarity = args["minimumSimilarity"] as double;
   double bestScore = 0.0;
   for (final imageEmbedding in imageEmbeddings) {
     final score = computeCosineSimilarity(
