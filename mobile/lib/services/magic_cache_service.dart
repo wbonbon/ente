@@ -4,7 +4,9 @@ import "dart:io";
 
 import "package:logging/logging.dart";
 import "package:path_provider/path_provider.dart";
+import "package:photos/core/event_bus.dart";
 import "package:photos/db/files_db.dart";
+import "package:photos/events/embedding_updated_event.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/search/generic_search_result.dart";
 import "package:photos/models/search/search_types.dart";
@@ -12,6 +14,7 @@ import "package:photos/service_locator.dart";
 import "package:photos/services/machine_learning/semantic_search/semantic_search_service.dart";
 import "package:photos/services/remote_assets_service.dart";
 import "package:photos/ui/viewer/search/result/magic_result_screen.dart";
+import "package:photos/utils/debouncer.dart";
 import "package:photos/utils/navigation_util.dart";
 import "package:shared_preferences/shared_preferences.dart";
 
@@ -80,38 +83,42 @@ extension MagicCacheServiceExtension on MagicCache {
 }
 
 class MagicCacheService {
-  static const _lastMagicCacheUpdateTime = "last_magic_cache_update_time";
   static const _kMagicPromptsDataUrl = "https://discover.ente.io/v1.json";
 
   /// Delay is for cache update to be done not during app init, during which a
   /// lot of other things are happening.
-  static const _kCacheUpdateDelay = Duration(seconds: 10);
+  static const _kCacheUpdateDelay = Duration(seconds: 15);
 
-  late SharedPreferences _prefs;
   final Logger _logger = Logger((MagicCacheService).toString());
   MagicCacheService._privateConstructor();
 
   static final MagicCacheService instance =
       MagicCacheService._privateConstructor();
 
+  final _debouncer = Debouncer(
+    _kCacheUpdateDelay,
+    executionInterval: const Duration(minutes: 1),
+  );
+
   void init(SharedPreferences preferences) {
+    if (!localSettings.isMLIndexingEnabled) {
+      return;
+    }
     _logger.info("Initializing MagicCacheService");
-    _prefs = preferences;
-    _updateCacheIfTheTimeHasCome();
+
+    _updateCacheIfRemoteJsonIsUpdated();
+    Bus.instance.on<EmbeddingUpdatedEvent>().listen((event) {
+      if (!localSettings.isMLIndexingEnabled) {
+        return;
+      }
+      _debouncer.run(() async {
+        _logger.info("Embedding updated, updating magic cache");
+        unawaited(_updateCache());
+      });
+    });
   }
 
-  Future<void> _resetLastMagicCacheUpdateTime() async {
-    await _prefs.setInt(
-      _lastMagicCacheUpdateTime,
-      DateTime.now().millisecondsSinceEpoch,
-    );
-  }
-
-  int get lastMagicCacheUpdateTime {
-    return _prefs.getInt(_lastMagicCacheUpdateTime) ?? 0;
-  }
-
-  Future<void> _updateCacheIfTheTimeHasCome() async {
+  Future<void> _updateCacheIfRemoteJsonIsUpdated() async {
     if (!localSettings.isMLIndexingEnabled) {
       return;
     }
@@ -122,14 +129,6 @@ class MagicCacheService {
         unawaited(_updateCache());
       });
       return;
-    }
-    if (lastMagicCacheUpdateTime <
-        DateTime.now()
-            .subtract(const Duration(days: 3))
-            .millisecondsSinceEpoch) {
-      Future.delayed(_kCacheUpdateDelay, () {
-        unawaited(_updateCache());
-      });
     }
   }
 
@@ -159,14 +158,6 @@ class MagicCacheService {
       }
       await file
           .writeAsBytes(MagicCache.encodeListToJson(magicCaches).codeUnits);
-      unawaited(
-        _resetLastMagicCacheUpdateTime().onError((error, stackTrace) {
-          _logger.warning(
-            "Error resetting last magic cache update time",
-            error,
-          );
-        }),
-      );
     } catch (e) {
       _logger.info("Error updating magic cache", e);
     }
