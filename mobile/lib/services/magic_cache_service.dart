@@ -7,6 +7,7 @@ import "package:path_provider/path_provider.dart";
 import "package:photos/core/event_bus.dart";
 import "package:photos/db/files_db.dart";
 import "package:photos/events/embedding_updated_event.dart";
+import "package:photos/events/magic_cache_updated_event.dart";
 import "package:photos/models/file/file.dart";
 import "package:photos/models/search/generic_search_result.dart";
 import "package:photos/models/search/search_types.dart";
@@ -158,6 +159,7 @@ class MagicCacheService {
       }
       await file
           .writeAsBytes(MagicCache.encodeListToJson(magicCaches).codeUnits);
+      Bus.instance.fire(MagicCacheUpdatedEvent());
     } catch (e) {
       _logger.info("Error updating magic cache", e);
     }
