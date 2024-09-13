@@ -155,7 +155,7 @@ class MagicCacheService {
       final magicCaches = await _nonEmptyMagicResults(magicPromptsData);
       final file = File(await _getCachePath());
       if (!file.existsSync()) {
-        file.createSync(recursive: true);
+        await file.create(recursive: true);
       }
       await file
           .writeAsBytes(MagicCache.encodeListToJson(magicCaches).codeUnits);
@@ -178,8 +178,7 @@ class MagicCacheService {
       _logger.info("No magic cache found");
       return null;
     }
-    final jsonString = await file.readAsString();
-
+    final jsonString = file.readAsStringSync();
     return MagicCache.decodeJsonToList(jsonString);
   }
 
