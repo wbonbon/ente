@@ -145,8 +145,11 @@ class SemanticSearchService {
       fileIDToScoreMap[result.id] = result.score;
     }
 
-    final filesMap = await FilesDB.instance
-        .getFilesFromIDs(queryResults.map((e) => e.id).toList());
+    final ids = <int>[];
+    for (var result in queryResults) {
+      ids.add(result.id);
+    }
+    final filesMap = await FilesDB.instance.getFilesFromIDs(ids);
 
     final ignoredCollections =
         CollectionsService.instance.getHiddenCollectionIds();
