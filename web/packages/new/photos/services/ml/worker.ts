@@ -309,7 +309,7 @@ export class MLWorker {
         return Array.from(fileByID, ([id, file]) => ({
             file,
             uploadItem: undefined,
-            remoteMLData: mlDataByID.get(id),
+            remoteMLData: undefined //mlDataByID.get(id),
         }));
     }
 
@@ -620,7 +620,7 @@ const index = async (
         log.debug(() => ["Uploading ML data", rawMLData]);
 
         try {
-            await putMLData(file, rawMLData);
+            // await putMLData(file, rawMLData);
         } catch (e) {
             // See: [Note: Transient and permanent indexing failures]
             log.error(`Failed to put ML data for ${f}`, e);
