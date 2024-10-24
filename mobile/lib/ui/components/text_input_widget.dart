@@ -265,6 +265,7 @@ class _TextInputWidgetState extends State<TextInputWidget> {
   }
 
   void _onSubmit() async {
+    debugPrint("Submit called");
     _debouncer.run(
       () => Future(() {
         setState(() {
@@ -277,7 +278,8 @@ class _TextInputWidgetState extends State<TextInputWidget> {
     }
     try {
       await widget.onSubmit!.call(_textController.text);
-    } catch (e) {
+    } catch (e, s) {
+      _logger.warning("Error in onSubmit", e, s);
       executionState = ExecutionState.error;
       _debouncer.cancelDebounceTimer();
       _exception = e as Exception;

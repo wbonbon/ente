@@ -837,6 +837,9 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
     CastGateway gw,
     String code,
   ) async {
+    if (kDebugMode) {
+      debugPrint("Casting album to device with code $code");
+    }
     try {
       if (lastCode == code) {
         return false;
