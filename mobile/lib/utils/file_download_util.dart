@@ -13,6 +13,7 @@ import "package:photos/events/local_photos_updated_event.dart";
 import 'package:photos/models/file/file.dart';
 import "package:photos/models/file/file_type.dart";
 import "package:photos/models/ignored_file.dart";
+import "package:photos/services/collections_service.dart";
 import "package:photos/services/ignored_files_service.dart";
 import "package:photos/services/local_sync_service.dart";
 import 'package:photos/utils/crypto_util.dart';
@@ -96,8 +97,7 @@ Future<File?> downloadAndDecrypt(
   EnteFile file, {
   ProgressCallback? progressCallback,
 }) async {
-  if (await CollectionsService.instance
-      .isPublicCollection(file.collectionID!)) {
+  if (CollectionsService.instance.isPublicCollection(file.collectionID!)) {
     final authToken = await CollectionsService.instance
         .getPublicAlbumToken(file.collectionID!);
 
