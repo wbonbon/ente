@@ -104,5 +104,18 @@ CREATE TABLE IF NOT EXISTS $clipTable (
   PRIMARY KEY ($fileIDColumn)
   );
 ''';
-
 const deleteClipEmbeddingsTable = 'DELETE FROM $clipTable';
+
+const compClipTable = 'comp_clip';
+
+const createCompClipTable = '''
+CREATE TABLE IF NOT EXISTS $compClipTable ( 
+  file1 INTEGER NOT NULL,
+  file2 INTEGER NOT NULL,
+  score  REAL NOT NULL,
+  PRIMARY KEY (file1,file2),
+  CHECK(file1 < file2)
+  );
+''';
+
+const deleteCompClipTable = 'DELETE FROM $compClipTable';
