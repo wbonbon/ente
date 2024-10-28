@@ -68,6 +68,37 @@ extension ClipDB on MLDataDB {
     Bus.instance.fire(EmbeddingUpdatedEvent());
   }
 
+  Future<void> putManySim(List<(int, int, double)> scores) async {
+    if (scores.isEmpty) return;
+    final db = await MLDataDB.instance.asyncDB;
+    final List<List<Object?>> inputs = [];
+    for (final score in scores) {
+      if (score.$1 == score.$2) continue;
+      if (score.$1 > score.$2) {
+        inputs.add([score.$1, score.$2, score.$3]);
+      } else {
+        inputs.add([score.$2, score.$1, score.$3]);
+      }
+    }
+    await db.executeBatch(
+      'INSERT OR REPLACE INTO $compClipTable (file1, file2, score) values(?, ?, ?)',
+      inputs,
+    );
+    Bus.instance.fire(SimilartiyScoreUpdatedEvent());
+  }
+
+  Future<List<(int, int, double)>> getSimScores() async {
+    final db = await MLDataDB.instance.asyncDB;
+    final results = await db.getAll('SELECT * FROM $compClipTable');
+    final List<(int, int, double)> scores = [];
+    for (final map in results) {
+      scores.add(
+        (map['file1'] as int, map['file2'] as int, map['score'] as double),
+      );
+    }
+    return scores;
+  }
+
   Future<void> deleteClipEmbeddings(List<int> fileIDs) async {
     final db = await MLDataDB.instance.asyncDB;
     await db.execute(
