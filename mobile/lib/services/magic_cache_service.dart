@@ -174,8 +174,6 @@ class MagicCacheService {
     });
   }
 
-
-
   Future<void> _resetLastMagicCacheUpdateTime() async {
     await _prefs.setInt(
       _lastMagicCacheUpdateTime,
@@ -187,8 +185,8 @@ class MagicCacheService {
     return _prefs.getInt(_lastMagicCacheUpdateTime) ?? 0;
   }
 
-  bool get enableDiscover => userRemoteFlagService
-        .getCachedBoolValue(UserRemoteFlagService.mlEnabled);
+  bool get enableDiscover =>
+      userRemoteFlagService.getCachedBoolValue(UserRemoteFlagService.mlEnabled);
 
   void queueUpdate(String reason) {
     _pendingUpdateReason.add(reason);
@@ -226,7 +224,14 @@ class MagicCacheService {
         _logger.info(
           "No update needed as ${_pendingUpdateReason.toList()} and isUpdateInProgress $_isUpdateInProgress",
         );
-        return;
+        if (_pendingUpdateReason.isEmpty && !_isUpdateInProgress) {
+          final result = await _getMagicCache();
+          if (result.isNotEmpty) {
+            return;
+          }
+        } else {
+          return;
+        }
       }
       _logger.info("updating magic cache ${_pendingUpdateReason.toList()}");
       _isUpdateInProgress = true;
