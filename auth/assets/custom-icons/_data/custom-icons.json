@@ -332,6 +332,10 @@
       "title": "Infomaniak"
     },
     {
+      "title": "Impact.com",
+      "slug": "impact"
+    },
+    {
       "title": "ING"
     },
     {
@@ -775,6 +779,15 @@
       "altNames": [
         "Twitch.tv",
         "Twitch tv"
+      ]
+    },
+    {
+      "title": "Ubiquiti",
+      "slug": "ubiquiti",
+      "altNames": [
+        "Unifi SSO",
+        "Unifi",
+        "Ubiquti SSO"
       ]
     },
     {
