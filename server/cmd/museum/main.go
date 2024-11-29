@@ -678,6 +678,7 @@ func main() {
 	adminAPI.POST("/queue/re-queue", adminHandler.ReQueueItem)
 	adminAPI.POST("/user/bonus", adminHandler.UpdateBonus)
 	adminAPI.POST("/job/clear-orphan-objects", adminHandler.ClearOrphanObjects)
+	adminAPI.POST("/job/clear-stale-replicated-objects", adminHandler.CleanUpStaleReplicatedData)
 
 	userEntityController := &userEntityCtrl.Controller{Repo: userEntityRepo}
 	userEntityHandler := &api.UserEntityHandler{Controller: userEntityController}

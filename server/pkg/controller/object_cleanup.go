@@ -690,3 +690,49 @@ func (c *ObjectCleanupController) DeleteObjectVersion(objectKey string, versionI
 	})
 	return stacktrace.Propagate(err, "")
 }
+
+func (c *ObjectCleanupController) CleanUpStaleReplicatedObjects(req ente.CleanUpStaleReplicatedObjectsRequest) error {
+	if req.DC != c.S3Config.WasabiComplianceDC() {
+		return ente.NewBadRequestWithMessage(fmt.Sprintf("Invalid DC %s", req.DC))
+	}
+	activeDC := c.S3Config.GetHotDataCenter()
+	if activeDC == req.DC {
+		return ente.NewBadRequestWithMessage(fmt.Sprintf("Active DC and DC to replicate are the same"))
+	}
+	toReplicateDC := req.DC
+	for _, objectKey := range req.ObjectKeys {
+		diffSize, err := c.areDiffSize(activeDC, toReplicateDC, objectKey)
+		if err != nil {
+			return stacktrace.Propagate(err, "failed to validate for object %s", objectKey)
+		}
+		if !*diffSize {
+			return stacktrace.Propagate(ente.NewBadRequestWithMessage(fmt.Sprintf("Size of object %s in %s and %s are the same", objectKey, activeDC, toReplicateDC)), "")
+		}
+	}
+	// todo: implement the rest of the logic here post the validation
+	return nil
+}
+
+// areDiffSize validates that the object size in the active DC and the toReplicateDC are the same
+func (c *ObjectCleanupController) areDiffSize(activeDC string, toReplicateDC string, objectKey string) (*bool, error) {
+	activeS3 := c.S3Config.GetS3Client(activeDC)
+	toReplicateS3 := c.S3Config.GetS3Client(toReplicateDC)
+
+	actRes, err := activeS3.HeadObject(&s3.HeadObjectInput{
+		Bucket: c.S3Config.GetBucket(activeDC),
+		Key:    &objectKey,
+	})
+	if err != nil {
+		return nil, stacktrace.Propagate(err, fmt.Sprintf("failed to get size from %s dc", activeDC))
+	}
+
+	toRepRes, err := toReplicateS3.HeadObject(&s3.HeadObjectInput{
+		Bucket: c.S3Config.GetBucket(toReplicateDC),
+		Key:    &objectKey,
+	})
+	if err != nil {
+		return nil, stacktrace.Propagate(err, fmt.Sprintf("failed to get size from %s dc", toReplicateDC))
+	}
+	diffSize := *actRes.ContentLength != *toRepRes.ContentLength
+	return &diffSize, nil
+}

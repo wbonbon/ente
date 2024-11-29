@@ -162,3 +162,20 @@ type ClearOrphanObjectsRequest struct {
 	Prefix        string `json:"prefix"`
 	ForceTaskLock bool   `json:"forceTaskLock"`
 }
+
+type CleanUpAction string
+
+const (
+	CleanUpActionDelete CleanUpAction = "delete"
+	RemoveLock                        = "remove_lock"
+	// DelayReplication action is used for extending replication attempt time for the object
+	DelayReplication = "delay_replication"
+	// ReplicateNow will set the lastReplicationAttempt to 0, so that the object is picked up for replication immediately
+	ReplicateNow = "replicate_now"
+)
+
+type CleanUpStaleReplicatedObjectsRequest struct {
+	DC         string   `json:"dc" binding:"required"`
+	ObjectKeys []string `json:"objectKeys" binding:"required"`
+	Action     CleanUpAction
+}

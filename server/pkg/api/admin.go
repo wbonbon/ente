@@ -597,3 +597,20 @@ func (h *AdminHandler) ClearOrphanObjects(c *gin.Context) {
 	go h.ObjectCleanupController.ClearOrphanObjects(req.DC, req.Prefix, req.ForceTaskLock)
 	c.JSON(http.StatusOK, gin.H{})
 }
+
+// CleanUpStaleReplicatedData is an admin API request to clean up of stale version of objects from DC with compliance hold.
+// In case of compliance hold, we can't replace objects in a bucket with same key when a new version is uploaded.
+func (h *AdminHandler) CleanUpStaleReplicatedData(c *gin.Context) {
+	var req ente.CleanUpStaleReplicatedObjectsRequest
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		handler.Error(c, stacktrace.Propagate(ente.ErrBadRequest, ""))
+		return
+	}
+	err = h.ObjectCleanupController.CleanUpStaleReplicatedObjects(req)
+	if err != nil {
+		handler.Error(c, stacktrace.Propagate(err, ""))
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{})
+}
