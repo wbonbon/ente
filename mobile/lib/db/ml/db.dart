@@ -1,4 +1,6 @@
 import 'dart:async';
+import "dart:ffi" show DynamicLibrary;
+import "dart:io" show Platform;
 import "dart:math";
 
 import "package:collection/collection.dart";
@@ -15,6 +17,7 @@ import "package:photos/services/machine_learning/face_ml/face_clustering/face_db
 import 'package:photos/services/machine_learning/face_ml/face_filtering/face_filtering_constants.dart';
 import "package:photos/services/machine_learning/ml_result.dart";
 import "package:photos/utils/ml_util.dart";
+import 'package:sqlite_async/sqlite3.dart';
 import 'package:sqlite_async/sqlite_async.dart';
 
 /// Stores all data for the ML related features. The database can be accessed by `MLDataDB.instance.database`.
@@ -61,6 +64,9 @@ class MLDataDB {
   }
 
   Future<SqliteDatabase> _initSqliteAsyncDatabase() async {
+    _logger.info("Start loading sqlite-vec extension");
+    await _loadSqliteVecExtension();
+    _logger.info("sqlite-vec extension loaded");
     final documentsDirectory = await getApplicationDocumentsDirectory();
     final String databaseDirectory =
         join(documentsDirectory.path, _databaseName);
@@ -76,6 +82,23 @@ class MLDataDB {
     stopwatch.stop();
 
     return asyncDBConnection;
+  }
+
+  Future<void> _loadSqliteVecExtension() async {
+    // Load the dynamic library
+    final DynamicLibrary vecLib = Platform.isAndroid
+        ? DynamicLibrary.open("libsqlite3-vec.so")
+        : DynamicLibrary.process();
+
+    // Load the extension
+    try {
+      sqlite3.ensureExtensionLoaded(
+        SqliteExtension.inLibrary(vecLib, 'sqlite3_vec_init'),
+      );
+      _logger.info('sqlite-vec extension loaded successfully');
+    } catch (e, s) {
+      _logger.severe("Failed to load sqlite-vec extension", e, s);
+    }
   }
 
   Future<void> _migrate(
