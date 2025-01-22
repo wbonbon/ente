@@ -137,11 +137,11 @@ class MLDataDB {
     await db.execute(createFaceEmbeddingsTable);
   }
 
-  // bulkInsertFaces inserts the faces in the vector DB in batches of 50.
+  // bulkInsertFaces inserts the faces in the vector DB in batches of 100.
   Future<void> bulkInsertFacesInVectorDB(List<Face> faces) async {
     try {
       final db = await instance.asyncDB;
-      const batchSize = 50;
+      const batchSize = 100;
       final numBatches = (faces.length / batchSize).ceil();
       for (int i = 0; i < numBatches; i++) {
         final start = i * batchSize;
