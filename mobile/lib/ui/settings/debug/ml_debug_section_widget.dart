@@ -1,10 +1,12 @@
 import "dart:async";
 
+import "package:flutter/foundation.dart" show kDebugMode;
 import 'package:flutter/material.dart';
 import "package:logging/logging.dart";
 import "package:photos/core/event_bus.dart";
 import "package:photos/db/ml/db.dart";
 import "package:photos/events/people_changed_event.dart";
+import "package:photos/extensions/stop_watch.dart";
 import "package:photos/models/ml/face/person.dart";
 import "package:photos/service_locator.dart";
 import "package:photos/services/machine_learning/face_ml/person/person_service.dart";
@@ -65,6 +67,27 @@ class _MLDebugSectionWidgetState extends State<MLDebugSectionWidget> {
     logger.info("Building ML Debug section options");
     return Column(
       children: [
+        sectionOptionSpacing,
+        MenuItemWidget(
+          captionedTextWidget: const CaptionedTextWidget(
+            title: "Fill up vector DB",
+          ),
+          pressedColor: getEnteColorScheme(context).fillFaint,
+          trailingIcon: Icons.chevron_right_outlined,
+          trailingIconIsMuted: true,
+          onTap: () async {
+            try {
+              final w = (kDebugMode ? EnteWatch('MLDataDB') : null)?..start();
+              final allFaces = await MLDataDB.instance.getAllFaces();
+              w?.log('get all faces for ${allFaces.length} faces');
+              await MLDataDB.instance.bulkInsertFacesInVectorDB(allFaces);
+              w?.log('inserting ${allFaces.length} faces into the vector db');
+            } catch (e, s) {
+              logger.warning('indexing failed ', e, s);
+              await showGenericErrorDialog(context: context, error: e);
+            }
+          },
+        ),
         sectionOptionSpacing,
         MenuItemWidget(
           captionedTextWidget: FutureBuilder<IndexStatus>(
