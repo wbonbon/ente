@@ -50,7 +50,13 @@ const createFaceEmbeddingsTable =
   );
   ''';
 
-
+const createFaceEmbeddingsLightTable =
+    '''CREATE VIRTUAL TABLE IF NOT EXISTS $faceEmbeddingsLightTable USING vec0(
+  $embeddingColumn float[192] NOT NULL,
+  +$faceIDColumn TEXT NOT NULL UNIQUE,
+  +$fileIDColumn	INTEGER NOT NULL,
+  );
+  ''';
 
 //##endregion
 
