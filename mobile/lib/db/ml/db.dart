@@ -130,6 +130,13 @@ class MLDataDB {
     }
   }
 
+  Future<void> cleanVectorDB() async {
+    final db = await instance.asyncDB;
+
+    await db.execute(deleteFaceEmbeddingsTable);
+    await db.execute(createFaceEmbeddingsTable);
+  }
+
   // bulkInsertFaces inserts the faces in the vector DB in batches of 50.
   Future<void> bulkInsertFacesInVectorDB(List<Face> faces) async {
     try {

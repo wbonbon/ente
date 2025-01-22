@@ -50,6 +50,7 @@ const createFaceEmbeddingsTable =
   +$isSideways	INTEGER
   );
   ''';
+const deleteFaceEmbeddingsTable = 'DELETE FROM $faceEmbeddingsTable';
 
 const createFaceEmbeddingsLightTable =
     '''CREATE VIRTUAL TABLE IF NOT EXISTS $faceEmbeddingsLightTable USING vec0(
@@ -63,6 +64,7 @@ const createFaceEmbeddingsLightTable =
   +$mlVersionColumn	INTEGER NOT NULL DEFAULT -1
   );
   ''';
+const deleteFaceEmbeddingsLightTable = 'DELETE FROM $faceEmbeddingsLightTable';
 
 //##endregion
 

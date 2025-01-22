@@ -70,7 +70,7 @@ class _MLDebugSectionWidgetState extends State<MLDebugSectionWidget> {
         sectionOptionSpacing,
         MenuItemWidget(
           captionedTextWidget: const CaptionedTextWidget(
-            title: "Fill up vector DB",
+            title: "(Re)fill up vector DB",
           ),
           pressedColor: getEnteColorScheme(context).fillFaint,
           trailingIcon: Icons.chevron_right_outlined,
@@ -80,10 +80,12 @@ class _MLDebugSectionWidgetState extends State<MLDebugSectionWidget> {
               final w = (kDebugMode ? EnteWatch('MLDataDB') : null)?..start();
               final allFaces = await MLDataDB.instance.getAllFaces();
               w?.log('get all faces for ${allFaces.length} faces');
+              await MLDataDB.instance.cleanVectorDB();
+              w?.log('cleaning vector db');
               await MLDataDB.instance.bulkInsertFacesInVectorDB(allFaces);
               w?.log('inserting ${allFaces.length} faces into the vector db');
             } catch (e, s) {
-              logger.warning('indexing failed ', e, s);
+              logger.warning('vector DB fill failed ', e, s);
               await showGenericErrorDialog(context: context, error: e);
             }
           },
