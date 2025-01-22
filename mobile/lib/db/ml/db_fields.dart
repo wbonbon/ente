@@ -33,6 +33,27 @@ const createFacesTable = '''CREATE TABLE IF NOT EXISTS $facesTable (
 const deleteFacesTable = 'DELETE FROM $facesTable';
 // End of Faces Table Fields & Schema Queries
 
+//##region Embedding Table Fields & Schema Queries
+
+const faceEmbeddingsTable = 'faceEmbeddings';
+const faceEmbeddingsLightTable = 'faceEmbeddingsLight';
+
+const createFaceEmbeddingsTable =
+    '''CREATE VIRTUAL TABLE IF NOT EXISTS $faceEmbeddingsTable USING vec0(
+  $faceIDColumn TEXT NOT NULL UNIQUE PRIMARY KEY,
+  $fileIDColumn	INTEGER NOT NULL,
+  $faceScore  REAL NOT NULL,
+  $faceBlur REAL NOT NULL DEFAULT $kLapacianDefault,
+  $isSideways	INTEGER NOT NULL DEFAULT 0,
+  $mlVersionColumn	INTEGER NOT NULL DEFAULT -1,
+  $embeddingColumn float[192] NOT NULL,
+  );
+  ''';
+
+
+
+//##endregion
+
 //##region Face Clusters Table Fields & Schema Queries
 const faceClustersTable = 'face_clusters';
 
