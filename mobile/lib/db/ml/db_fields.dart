@@ -40,13 +40,14 @@ const faceEmbeddingsLightTable = 'faceEmbeddingsLight';
 
 const createFaceEmbeddingsTable =
     '''CREATE VIRTUAL TABLE IF NOT EXISTS $faceEmbeddingsTable USING vec0(
+  $embeddingColumn float[192],
   $faceIDColumn TEXT PRIMARY KEY,
   $fileIDColumn	INTEGER,
   $faceScore  FLOAT,
   $faceBlur FLOAT,
-  $isSideways	INTEGER,
-  $mlVersionColumn	INTEGER,
-  $embeddingColumn float[192],
+  $mlVersionColumn INTEGER
+  +$faceDetectionColumn	TEXT NOT NULL,
+  +$isSideways	INTEGER,
   );
   ''';
 
@@ -59,7 +60,7 @@ const createFaceEmbeddingsLightTable =
   +$faceScore  REAL NOT NULL,
   +$faceBlur REAL NOT NULL DEFAULT $kLapacianDefault,
   +$isSideways	INTEGER NOT NULL DEFAULT 0,
-  +$mlVersionColumn	INTEGER NOT NULL DEFAULT -1,
+  +$mlVersionColumn	INTEGER NOT NULL DEFAULT -1
   );
   ''';
 
