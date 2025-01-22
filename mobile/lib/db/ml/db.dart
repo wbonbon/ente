@@ -53,6 +53,7 @@ class MLDataDB {
     fcClusterIDIndex,
     createClipEmbeddingsTable,
     createFileDataTable,
+    createFaceEmbeddingsTable, // TODO: try out [createFaceEmbeddingsLightTable] too
   ];
 
   // only have a single app-wide reference to the database
@@ -121,6 +122,7 @@ class MLDataDB {
         }
         await tx.execute('PRAGMA user_version = $toVersion');
       });
+      _logger.info("Database migrated to version $toVersion successfully");
     } else if (currentVersion > toVersion) {
       throw AssertionError(
         "currentVersion($currentVersion) cannot be greater than toVersion($toVersion)",
