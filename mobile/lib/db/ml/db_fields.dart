@@ -45,15 +45,15 @@ const createFaceEmbeddingsTable =
   $fileIDColumn	INTEGER,
   $faceScore  FLOAT,
   $faceBlur FLOAT,
-  $mlVersionColumn INTEGER
+  $mlVersionColumn INTEGER,
   +$faceDetectionColumn	TEXT NOT NULL,
-  +$isSideways	INTEGER,
+  +$isSideways	INTEGER
   );
   ''';
 
 const createFaceEmbeddingsLightTable =
     '''CREATE VIRTUAL TABLE IF NOT EXISTS $faceEmbeddingsLightTable USING vec0(
-  $embeddingColumn float[192] NOT NULL,
+  $embeddingColumn float[192],
   +$fileIDColumn	INTEGER NOT NULL,
   +$faceIDColumn  TEXT NOT NULL UNIQUE,
 	+$faceDetectionColumn	TEXT NOT NULL,
