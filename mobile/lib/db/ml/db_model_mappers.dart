@@ -6,14 +6,16 @@ import "package:photos/models/ml/face/detection.dart";
 import "package:photos/models/ml/face/face.dart";
 import "package:photos/models/ml/ml_versions.dart";
 
-Map<String, dynamic> mapRemoteToFaceDB(Face face) {
+Map<String, dynamic> mapRemoteToFaceDB(Face face, {bool forVectorDB = false}) {
   return {
     faceIDColumn: face.faceID,
     fileIDColumn: face.fileID,
     faceDetectionColumn: json.encode(face.detection.toJson()),
-    embeddingColumn: EVector(
-      values: face.embedding,
-    ).writeToBuffer(),
+    embeddingColumn: forVectorDB
+        ? face.embedding
+        : EVector(
+            values: face.embedding,
+          ).writeToBuffer(),
     faceScore: face.score,
     faceBlur: face.blur,
     isSideways: face.detection.faceIsSideways() ? 1 : 0,

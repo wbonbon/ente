@@ -75,10 +75,10 @@ class MLDataDB {
     final asyncDBConnection =
         SqliteDatabase(path: databaseDirectory, maxReaders: 2);
     final stopwatch = Stopwatch()..start();
-    _logger.info("MLDataDB: Starting migration");
+    _logger.info("MLDataDB: Check if migration is needed");
     await _migrate(asyncDBConnection);
     _logger.info(
-      "MLDataDB Migration took ${stopwatch.elapsedMilliseconds} ms",
+      "MLDataDB Migration (check) took ${stopwatch.elapsedMilliseconds} ms",
     );
     stopwatch.stop();
 
@@ -127,6 +127,38 @@ class MLDataDB {
       throw AssertionError(
         "currentVersion($currentVersion) cannot be greater than toVersion($toVersion)",
       );
+    }
+  }
+
+  // bulkInsertFaces inserts the faces in the vector DB in batches of 100.
+  Future<void> bulkInsertFacesInVectorDB(List<Face> faces) async {
+    try {
+      final db = await instance.asyncDB;
+      const batchSize = 2;
+      final numBatches = (faces.length / batchSize).ceil();
+      for (int i = 0; i < numBatches; i++) {
+        final start = i * batchSize;
+        final end = min((i + 1) * batchSize, faces.length);
+        final batch = faces.sublist(start, end);
+
+        final parameterSets = batch.map((face) {
+          final map = mapRemoteToFaceDB(face, forVectorDB: true);
+          return "('${map[embeddingColumn]}', '${map[faceIDColumn]}', ${map[fileIDColumn]}, ${map[faceScore]} , ${map[faceBlur]}, ${map[mlVersionColumn]}, '${map[faceDetectionColumn]}', ${map[isSideways]})";
+        }).toList();
+        final String sql = '''
+        INSERT INTO $faceEmbeddingsTable (
+          $embeddingColumn, $faceIDColumn, $fileIDColumn, $faceScore, $faceBlur, $mlVersionColumn, $faceDetectionColumn, $isSideways
+        ) VALUES 
+      ''' +
+            parameterSets.join(',');
+        // ON CONFLICT($faceIDColumn) DO UPDATE SET $faceIDColumn = excluded.$faceIDColumn, $faceDetectionColumn = excluded.$faceDetectionColumn, $embeddingColumn = excluded.$embeddingColumn, $faceScore = excluded.$faceScore, $faceBlur = excluded.$faceBlur, $isSideways = excluded.$isSideways, $mlVersionColumn = excluded.$mlVersionColumn
+
+        await db.execute(sql);
+        _logger.info('Batch ${i + 1} of $numBatches inserted');
+      }
+    } catch (e, s) {
+      _logger.severe('Error in bulkInsertFacesInVectorDB', e, s);
+      rethrow;
     }
   }
 
@@ -636,6 +668,34 @@ class MLDataDB {
         rethrow;
       }
     });
+  }
+
+  /// TODO: lau: remove this function later if not needed
+  Future<List<Face>> getAllFaces() async {
+    final db = await instance.asyncDB;
+    const int batchSize = 10000;
+    int offset = 0;
+    const int maxFaces = 200000; // TODO: lau: remove this limit later
+    final result = <Face>[];
+    while (true) {
+      // Query a batch of rows
+      final List<Map<String, dynamic>> maps = await db.getAll(
+        'SELECT * FROM $facesTable'
+        ' WHERE $faceScore > 0.1'
+        ' ORDER BY $faceIDColumn'
+        ' DESC LIMIT $batchSize OFFSET $offset',
+      );
+      // Break the loop if no more rows
+      if (maps.isEmpty) {
+        break;
+      }
+      result.addAll(maps.map((e) => mapRowToFace(e)));
+      if (result.length >= maxFaces) {
+        break;
+      }
+      offset += batchSize;
+    }
+    return result;
   }
 
   Future<List<FaceDbInfoForClustering>> getFaceInfoForClustering({
