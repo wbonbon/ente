@@ -35,8 +35,8 @@ const deleteFacesTable = 'DELETE FROM $facesTable';
 
 //##region Embedding Table Fields & Schema Queries
 
-const faceEmbeddingsTable = 'faceEmbeddings';
-const faceEmbeddingsLightTable = 'faceEmbeddingsLight';
+const faceEmbeddingsTable = 'faceEmbeddingsTable';
+const faceEmbeddingsLightTable = 'faceEmbeddingsLightTable';
 
 const createFaceEmbeddingsTable =
     '''CREATE VIRTUAL TABLE IF NOT EXISTS $faceEmbeddingsTable USING vec0(
