@@ -40,7 +40,7 @@ const faceEmbeddingsLightTable = 'faceEmbeddingsLight';
 
 const createFaceEmbeddingsTable =
     '''CREATE VIRTUAL TABLE IF NOT EXISTS $faceEmbeddingsTable USING vec0(
-  $embeddingColumn float[192],
+  $embeddingColumn float[192] distance_metric=cosine,
   $faceIDColumn TEXT PRIMARY KEY,
   $fileIDColumn	INTEGER,
   $faceScore  FLOAT,
@@ -54,7 +54,7 @@ const deleteFaceEmbeddingsTable = 'DELETE FROM $faceEmbeddingsTable';
 
 const createFaceEmbeddingsLightTable =
     '''CREATE VIRTUAL TABLE IF NOT EXISTS $faceEmbeddingsLightTable USING vec0(
-  $embeddingColumn float[192],
+  $embeddingColumn float[192] distance_metric=cosine,
   +$fileIDColumn	INTEGER NOT NULL,
   +$faceIDColumn  TEXT NOT NULL UNIQUE,
 	+$faceDetectionColumn	TEXT NOT NULL,
