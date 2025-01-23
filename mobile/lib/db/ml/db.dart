@@ -169,6 +169,29 @@ class MLDataDB {
     }
   }
 
+  /// TODO: lau: add [getClosestFaceIdsFromVectorDB] method
+  Future<List<(Face, double)>> getClosestFacesFromVectorDB(
+    List<double> searchEmbedding, {
+    kNearest = 10,
+  }) async {
+    final db = await instance.asyncDB;
+    final searchEmbeddingStr = searchEmbedding.join(',');
+    final List<Map<String, dynamic>> maps = await db.getAll(
+      '''
+      SELECT $embeddingColumn, $faceIDColumn, $fileIDColumn, $faceScore, $faceBlur, $mlVersionColumn, $faceDetectionColumn, $isSideways, distance
+      FROM $faceEmbeddingsTable
+      WHERE $embeddingColumn MATCH '($searchEmbeddingStr)'
+      AND k = $kNearest
+      ''',
+    );
+    if (maps.isEmpty) return [];
+    return maps
+        .map(
+          (e) => (mapRowToFace(e, fromVectorDB: true), e['distance'] as double),
+        )
+        .toList();
+  }
+
   // bulkInsertFaces inserts the faces in the database in batches of 1000.
   // This is done to avoid the error "too many SQL variables" when inserting
   // a large number of faces.
