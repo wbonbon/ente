@@ -7,6 +7,7 @@ import "package:photos/core/event_bus.dart";
 import "package:photos/db/ml/db.dart";
 import "package:photos/events/people_changed_event.dart";
 import "package:photos/extensions/stop_watch.dart";
+import "package:photos/generated/protos/ente/common/vector.pb.dart";
 import "package:photos/models/ml/face/person.dart";
 import "package:photos/service_locator.dart";
 import "package:photos/services/machine_learning/face_ml/person/person_service.dart";
@@ -86,6 +87,64 @@ class _MLDebugSectionWidgetState extends State<MLDebugSectionWidget> {
               w?.log('inserting ${allFaces.length} faces into the vector db');
             } catch (e, s) {
               logger.warning('vector DB fill failed ', e, s);
+              await showGenericErrorDialog(context: context, error: e);
+            }
+          },
+        ),
+        sectionOptionSpacing,
+        MenuItemWidget(
+          captionedTextWidget: const CaptionedTextWidget(
+            title: "Search vector DB",
+          ),
+          pressedColor: getEnteColorScheme(context).fillFaint,
+          trailingIcon: Icons.chevron_right_outlined,
+          trailingIconIsMuted: true,
+          onTap: () async {
+            try {
+              final w = (kDebugMode ? EnteWatch('MLDataDB') : null)?..start();
+              final persons = await PersonService.instance.getPersons();
+              w?.log('get all persons for ${persons.length} persons');
+              String laurensID = '';
+              for (final person in persons) {
+                if (person.data.name.toLowerCase().contains('laurens')) {
+                  laurensID = person.remoteID;
+                }
+              }
+              if (laurensID.isEmpty) {
+                throw Exception('Laurens not found');
+              }
+              final laurensFaceIDs =
+                  await MLDataDB.instance.getFaceIDsForPerson(laurensID);
+              w?.log(
+                'getting all face ids for laurens (${laurensFaceIDs.length} faces)',
+              );
+              final laurensFaceIdToEmbeddingData = await MLDataDB.instance
+                  .getFaceEmbeddingMapForFaces(laurensFaceIDs);
+              final laurensFaceIdToEmbedding = laurensFaceIdToEmbeddingData.map(
+                (key, value) => MapEntry(key, EVector.fromBuffer(value).values),
+              );
+              final facesCount = laurensFaceIdToEmbedding.length;
+              int closestFoundFaceIsLaurens = 0;
+              int embedddingsTested = 0;
+              for (final faceIdEmbedding in laurensFaceIdToEmbedding.entries) {
+                // final faceId = faceIdEmbedding.key;
+                final embedding = faceIdEmbedding.value;
+                final similarFaceID = await MLDataDB.instance
+                    .getClosestFaceIdsFromVectorDB(embedding);
+                if (similarFaceID.isNotEmpty) {
+                  // final closestFace = similarFaces.first;
+                  if (laurensFaceIDs.contains(similarFaceID)) {
+                    closestFoundFaceIsLaurens++;
+                  }
+                }
+                embedddingsTested++;
+                w?.log('$embedddingsTested / $facesCount embeddings tested');
+              }
+              w?.log(
+                'finding similar faces for $facesCount faces, with success rate ${closestFoundFaceIsLaurens / facesCount}',
+              );
+            } catch (e, s) {
+              logger.warning('vector DB search failed ', e, s);
               await showGenericErrorDialog(context: context, error: e);
             }
           },

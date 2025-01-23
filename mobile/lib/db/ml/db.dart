@@ -169,6 +169,24 @@ class MLDataDB {
     }
   }
 
+  Future<String> getClosestFaceIdsFromVectorDB(
+    List<double> searchEmbedding, {
+    kNearest = 10,
+  }) async {
+    final db = await instance.asyncDB;
+    final List<Map<String, dynamic>> maps = await db.getAll(
+      '''
+      SELECT $embeddingColumn, $faceIDColumn, $fileIDColumn, $faceScore, $faceBlur, $mlVersionColumn, $faceDetectionColumn, $isSideways, distance
+      FROM $faceEmbeddingsTable
+      WHERE $embeddingColumn MATCH '$searchEmbedding'
+      AND k = $kNearest
+      ORDER BY distance ASC
+      ''',
+    );
+    if (maps.isEmpty) return '';
+    return maps.first[faceIDColumn] as String;
+  }
+
   /// TODO: lau: add [getClosestFaceIdsFromVectorDB] method
   Future<List<(Face, double)>> getClosestFacesFromVectorDB(
     List<double> searchEmbedding, {
@@ -181,9 +199,13 @@ class MLDataDB {
       FROM $faceEmbeddingsTable
       WHERE $embeddingColumn MATCH '$searchEmbedding'
       AND k = $kNearest
+      ORDER BY distance ASC
       ''',
     );
     if (maps.isEmpty) return [];
+    final test = maps.first[embeddingColumn];
+    final test2 = maps.first[faceIDColumn];
+    final test3 = maps.first[fileIDColumn];
     return maps
         .map(
           (e) => (mapRowToFace(e, fromVectorDB: true), e['distance'] as double),
