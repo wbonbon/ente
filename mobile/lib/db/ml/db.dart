@@ -175,12 +175,11 @@ class MLDataDB {
     kNearest = 10,
   }) async {
     final db = await instance.asyncDB;
-    final searchEmbeddingStr = searchEmbedding.join(',');
     final List<Map<String, dynamic>> maps = await db.getAll(
       '''
       SELECT $embeddingColumn, $faceIDColumn, $fileIDColumn, $faceScore, $faceBlur, $mlVersionColumn, $faceDetectionColumn, $isSideways, distance
       FROM $faceEmbeddingsTable
-      WHERE $embeddingColumn MATCH '($searchEmbeddingStr)'
+      WHERE $embeddingColumn MATCH '$searchEmbedding'
       AND k = $kNearest
       ''',
     );
