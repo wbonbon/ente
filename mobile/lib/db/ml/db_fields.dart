@@ -37,6 +37,7 @@ const deleteFacesTable = 'DELETE FROM $facesTable';
 
 const faceEmbeddingsTable = 'faceEmbeddingsTable';
 const faceEmbeddingsLightTable = 'faceEmbeddingsLightTable';
+const faceEmbeddingsUltraLightTable = 'faceEmbeddingsUltraLightTable';
 
 const createFaceEmbeddingsTable =
     '''CREATE VIRTUAL TABLE IF NOT EXISTS $faceEmbeddingsTable USING vec0(
@@ -65,6 +66,15 @@ const createFaceEmbeddingsLightTable =
   );
   ''';
 const deleteFaceEmbeddingsLightTable = 'DELETE FROM $faceEmbeddingsLightTable';
+
+const createFaceEmbeddingsUltraLightTable =
+    '''CREATE VIRTUAL TABLE IF NOT EXISTS $faceEmbeddingsUltraLightTable USING vec0(
+  $embeddingColumn float[192] distance_metric=cosine,
+  +$faceIDColumn  TEXT NOT NULL UNIQUE,
+  );
+  ''';
+const deleteFaceEmbeddingsUltraLightTable =
+    'DELETE FROM $faceEmbeddingsUltraLightTable';
 
 //##endregion
 

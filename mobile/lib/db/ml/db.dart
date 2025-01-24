@@ -135,6 +135,41 @@ class MLDataDB {
 
     await db.execute(deleteFaceEmbeddingsTable);
     await db.execute(createFaceEmbeddingsTable);
+
+    // await db.execute(deleteFaceEmbeddingsUltraLightTable);
+    await db.execute(createFaceEmbeddingsUltraLightTable);
+  }
+
+  // bulkInsertFaces inserts the faces in the vector DB in batches of 100.
+  Future<void> bulkInsertFacesInVectorDbUltraLight(List<Face> faces) async {
+    try {
+      final db = await instance.asyncDB;
+      const batchSize = 100;
+      final numBatches = (faces.length / batchSize).ceil();
+      for (int i = 0; i < numBatches; i++) {
+        final start = i * batchSize;
+        final end = min((i + 1) * batchSize, faces.length);
+        final batch = faces.sublist(start, end);
+
+        final parameterSets = batch.map((face) {
+          final map = mapRemoteToFaceDB(face, forVectorDB: true);
+          return "('${map[embeddingColumn]}', '${map[faceIDColumn]}')";
+        }).toList();
+        final String sql = '''
+        INSERT INTO $faceEmbeddingsUltraLightTable (
+          $embeddingColumn, $faceIDColumn
+        ) VALUES 
+      ''' +
+            parameterSets.join(',');
+        // ON CONFLICT($faceIDColumn) DO UPDATE SET $faceIDColumn = excluded.$faceIDColumn, $faceDetectionColumn = excluded.$faceDetectionColumn, $embeddingColumn = excluded.$embeddingColumn, $faceScore = excluded.$faceScore, $faceBlur = excluded.$faceBlur, $isSideways = excluded.$isSideways, $mlVersionColumn = excluded.$mlVersionColumn
+
+        await db.execute(sql);
+        _logger.info('Batch ${i + 1} of $numBatches inserted');
+      }
+    } catch (e, s) {
+      _logger.severe('Error in bulkInsertFacesInVectorDbUltraLight', e, s);
+      rethrow;
+    }
   }
 
   // bulkInsertFaces inserts the faces in the vector DB in batches of 100.
@@ -176,8 +211,8 @@ class MLDataDB {
     final db = await instance.asyncDB;
     final List<Map<String, dynamic>> maps = await db.getAll(
       '''
-      SELECT $embeddingColumn, $faceIDColumn, $fileIDColumn, $faceScore, $faceBlur, $mlVersionColumn, $faceDetectionColumn, $isSideways, distance
-      FROM $faceEmbeddingsTable
+      SELECT $embeddingColumn, $faceIDColumn, distance
+      FROM $faceEmbeddingsUltraLightTable
       WHERE $embeddingColumn MATCH '$searchEmbedding'
       AND k = $kNearest
       ORDER BY distance ASC

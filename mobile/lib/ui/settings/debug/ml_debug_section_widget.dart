@@ -83,7 +83,7 @@ class _MLDebugSectionWidgetState extends State<MLDebugSectionWidget> {
               w?.log('get all faces for ${allFaces.length} faces');
               await MLDataDB.instance.cleanVectorDB();
               w?.log('cleaning vector db');
-              await MLDataDB.instance.bulkInsertFacesInVectorDB(allFaces);
+              await MLDataDB.instance.bulkInsertFacesInVectorDbUltraLight(allFaces);
               w?.log('inserting ${allFaces.length} faces into the vector db');
             } catch (e, s) {
               logger.warning('vector DB fill failed ', e, s);
