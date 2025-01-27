@@ -195,7 +195,7 @@ class _MLDebugSectionWidgetState extends State<MLDebugSectionWidget> {
                 final similarFaceID = await MLDataDB.instance
                     .getClosestFaceIdsFromVectorDB(embedding);
                 embeddingsTested++;
-                if (embeddingsTested % 1000 == 0) {
+                if (embeddingsTested % 100 == 0) {
                   w?.log(
                     '$embeddingsTested / $facesCount embeddings tested in vector DB',
                   );
@@ -222,7 +222,7 @@ class _MLDebugSectionWidgetState extends State<MLDebugSectionWidget> {
                   final distance = 1 - vector.dot(otherVector);
                 }
                 embeddingsTested++;
-                if (embeddingsTested % 1000 == 0) {
+                if (embeddingsTested % 100 == 0) {
                   w?.log(
                     '$embeddingsTested / $facesCount embeddings tested with own vectors',
                   );
