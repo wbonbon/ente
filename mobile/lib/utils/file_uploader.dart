@@ -1141,8 +1141,14 @@ class FileUploader {
       request["pubMagicMetadata"] = pubMetadata;
     }
     try {
-      final response = await _enteDio.post("/files", data: request);
-      final data = response.data;
+      // final response = await _enteDio.post("/files", data: request);
+      // final data = response.data;
+      final data = {
+        "id": DateTime.now().microsecondsSinceEpoch,
+        "updationTime": DateTime.now().microsecondsSinceEpoch,
+        "ownerID": Configuration.instance.getUserID(),
+      };
+
       file.uploadedFileID = data["id"];
       file.collectionID = collectionID;
       file.updationTime = data["updationTime"];
@@ -1313,15 +1319,17 @@ class FileUploader {
     final startTime = DateTime.now().millisecondsSinceEpoch;
     final fileName = basename(file.path);
     try {
-      await _dio.put(
-        uploadURL.url,
-        data: file.openRead(),
-        options: Options(
-          headers: {
-            Headers.contentLengthHeader: fileSize,
-          },
-        ),
-      );
+      // await _dio.put(
+      //   uploadURL.url,
+      //   data: file.openRead(),
+      //   options: Options(
+      //     headers: {
+      //       Headers.contentLengthHeader: fileSize,
+      //     },
+      //   ),
+      // );
+      // await for 500ms
+      await Future.delayed(const Duration(milliseconds: 500));
       _logger.info(
         "Uploaded object $fileName of size: ${formatBytes(fileSize)} at speed: ${(fileSize / (DateTime.now().millisecondsSinceEpoch - startTime)).toStringAsFixed(2)} KB/s",
       );

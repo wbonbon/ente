@@ -85,7 +85,7 @@ class _HomeGalleryWidgetState extends State<HomeGalleryWidget> {
         FileLoadResult result;
         final DBFilterOptions filterOptions = DBFilterOptions(
           hideIgnoredForUpload: true,
-          dedupeUploadID: true,
+          dedupeUploadID: false,
           ignoredCollectionIDs: collectionsToHide,
           ignoreSavedFiles: true,
         );
