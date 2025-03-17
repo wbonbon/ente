@@ -2,7 +2,7 @@ import "dart:async";
 import "dart:developer" as dev show log;
 import "dart:math" show Random, max, min;
 
-import "package:computer/computer.dart";
+// import "package:computer/computer.dart";
 import "package:flutter/foundation.dart" show kDebugMode;
 import "package:intl/intl.dart";
 import "package:logging/logging.dart";
@@ -114,9 +114,8 @@ class SmartMemoriesService {
       // TODO: lau: locale with DateFormat is not working well in computer, fix later
 
       _logger.finest('all data fetched $t at ${DateTime.now()}, to computer');
-      return Computer.shared().compute(
-        _allMemoriesCalculations,
-        param: <String, dynamic>{
+      return _allMemoriesCalculations(
+        <String, dynamic>{
           "allFiles": allFiles,
           "allFileIdsToFile": allFileIdsToFile,
           "now": now,
@@ -285,7 +284,9 @@ class SmartMemoriesService {
       dev.log('finished actual memory calculations ${DateTime.now()}');
       return MemoriesResult(memories, bases);
     } catch (e, s) {
-      dev.log("Error in _allMemoriesCalculations \n Error:$e \n Stacktrace:$s");
+      Logger('allMemoriesCalculation').severe(
+        "Error in _allMemoriesCalculations \n Error:$e \n Stacktrace:$s",
+      );
       return MemoriesResult(<SmartMemory>[], <BaseLocation>[]);
     }
   }
@@ -332,367 +333,380 @@ class SmartMemoriesService {
         currentTime.add(kMemoriesUpdateFrequency).microsecondsSinceEpoch;
     w?.log('allFiles setup');
 
-    // Get ordered list of important people (all named, from most to least files)
-    if (persons.length < 5) return []; // Stop if not enough named persons
-    final personIdToPerson = <String, PersonEntity>{};
-    final personIdToFaceIDs = <String, Set<String>>{};
-    final personIdToFileIDs = <String, Set<int>>{};
-    // final personIdToFaceIdToFace = <String, Map<String, Face>>{}; TODO: lau: try using relative face size as metric of importance
-    for (final person in persons) {
-      final personID = person.remoteID;
-      personIdToPerson[personID] = person;
-      personIdToFaceIDs[personID] = {};
-      personIdToFileIDs[personID] = {};
-      for (final cluster in person.data.assigned) {
-        if (cluster.faces.isEmpty) continue;
-        personIdToFaceIDs[personID]!.addAll(cluster.faces);
-        personIdToFileIDs[personID]!
-            .addAll(cluster.faces.map((faceID) => getFileIdFromFaceId(faceID)));
-      }
-    }
-    final List<String> orderedImportantPersonsID = persons
-        .where((person) => !person.data.isHidden)
-        .map((p) => p.remoteID)
-        .toList();
-    orderedImportantPersonsID.sort((a, b) {
-      final aFaces = personIdToFaceIDs[a]!.length;
-      final bFaces = personIdToFaceIDs[b]!.length;
-      return bFaces.compareTo(aFaces);
-    });
-    w?.log('orderedImportantPersonsID setup');
-
-    // Check if the user has assignmed "me"
-    String? meID;
-    for (final personEntity in persons) {
-      if (personEntity.data.email == currentUserEmail) {
-        meID = personEntity.remoteID;
-        break;
-      }
-    }
-    final bool isMeAssigned = meID != null;
-    Set<int>? meFileIDs;
-    if (isMeAssigned) meFileIDs = personIdToFileIDs[meID]!;
-
-    // Loop through the people and find all memories
-    final Map<String, Map<PeopleMemoryType, List<PeopleMemory>>>
-        personToMemories = {};
-    for (final personID in orderedImportantPersonsID) {
-      final personFileIDs = personIdToFileIDs[personID]!;
-      final personName = personIdToPerson[personID]!.data.name;
-      w?.log('start with new person $personName');
-      w?.log('personFilesToFaces setup');
-      // Inside people loop, check for spotlight (Most likely every person will have a spotlight)
-      final spotlightFiles = <EnteFile>[];
-      for (final fileID in personFileIDs) {
-        final int personsPresent = fileIdToFaces[fileID]?.length ?? 10;
-        if (personsPresent > 1) continue;
-        final file = allFileIdsToFile[fileID];
-        if (file != null) {
-          spotlightFiles.add(file);
+    try {
+      // Get ordered list of important people (all named, from most to least files)
+      if (persons.length < 5) return []; // Stop if not enough named persons
+      final personIdToPerson = <String, PersonEntity>{};
+      final personIdToFaceIDs = <String, Set<String>>{};
+      final personIdToFileIDs = <String, Set<int>>{};
+      // final personIdToFaceIdToFace = <String, Map<String, Face>>{}; TODO: lau: try using relative face size as metric of importance
+      for (final person in persons) {
+        final personID = person.remoteID;
+        personIdToPerson[personID] = person;
+        personIdToFaceIDs[personID] = {};
+        personIdToFileIDs[personID] = {};
+        for (final cluster in person.data.assigned) {
+          if (cluster.faces.isEmpty) continue;
+          personIdToFaceIDs[personID]!.addAll(cluster.faces);
+          personIdToFileIDs[personID]!.addAll(
+            cluster.faces.map((faceID) => getFileIdFromFaceId(faceID)),
+          );
         }
       }
-      if (spotlightFiles.length > 5) {
-        String title = "Spotlight on $personName";
-        if (isMeAssigned && meID == personID) {
-          title = "Spotlight on yourself";
-        }
-        final selectSpotlightMemories = await _bestSelectionPeople(
-          spotlightFiles.map((f) => Memory.fromFile(f, seenTimes)).toList(),
-          fileIDToImageEmbedding: fileIDToImageEmbedding,
-          clipPositiveTextVector: clipPositiveTextVector,
-        );
-        final spotlightMemory = PeopleMemory(
-          selectSpotlightMemories,
-          title,
-          nowInMicroseconds,
-          windowEnd,
-          PeopleMemoryType.spotlight,
-          personID,
-        );
-        personToMemories
-            .putIfAbsent(personID, () => {})
-            .putIfAbsent(PeopleMemoryType.spotlight, () => [spotlightMemory]);
-      }
-      w?.log('spotlight setup');
+      final List<String> orderedImportantPersonsID = persons
+          .where((person) => !person.data.isHidden)
+          .map((p) => p.remoteID)
+          .toList();
+      orderedImportantPersonsID.sort((a, b) {
+        final aFaces = personIdToFaceIDs[a]!.length;
+        final bFaces = personIdToFaceIDs[b]!.length;
+        return bFaces.compareTo(aFaces);
+      });
+      w?.log('orderedImportantPersonsID setup');
 
-      // Inside people loop, check for youAndThem
-      if (isMeAssigned && meID != personID) {
-        final youAndThemFiles = <EnteFile>[];
+      // Check if the user has assignmed "me"
+      String? meID;
+      for (final personEntity in persons) {
+        if (personEntity.data.email == currentUserEmail) {
+          meID = personEntity.remoteID;
+          break;
+        }
+      }
+      final bool isMeAssigned = meID != null;
+      Set<int>? meFileIDs;
+      if (isMeAssigned) meFileIDs = personIdToFileIDs[meID]!;
+
+      // Loop through the people and find all memories
+      final Map<String, Map<PeopleMemoryType, List<PeopleMemory>>>
+          personToMemories = {};
+      for (final personID in orderedImportantPersonsID) {
+        final personFileIDs = personIdToFileIDs[personID]!;
+        final personName = personIdToPerson[personID]!.data.name;
+        w?.log('start with new person $personName');
+        w?.log('personFilesToFaces setup');
+        // Inside people loop, check for spotlight (Most likely every person will have a spotlight)
+        final spotlightFiles = <EnteFile>[];
         for (final fileID in personFileIDs) {
-          final bool mePresent = meFileIDs!.contains(fileID);
-          final personFaces = fileIdToFaces[fileID] ?? [];
-          if (!mePresent || personFaces.length != 2) continue;
+          final int personsPresent = fileIdToFaces[fileID]?.length ?? 10;
+          if (personsPresent > 1) continue;
           final file = allFileIdsToFile[fileID];
           if (file != null) {
-            youAndThemFiles.add(file);
+            spotlightFiles.add(file);
           }
         }
-        if (youAndThemFiles.length > 5) {
-          final String title = "You and $personName";
-          final selectYouAndThemMemories = await _bestSelectionPeople(
-            youAndThemFiles.map((f) => Memory.fromFile(f, seenTimes)).toList(),
+        if (spotlightFiles.length > 5) {
+          String title = "Spotlight on $personName";
+          if (isMeAssigned && meID == personID) {
+            title = "Spotlight on yourself";
+          }
+          final selectSpotlightMemories = await _bestSelectionPeople(
+            spotlightFiles.map((f) => Memory.fromFile(f, seenTimes)).toList(),
             fileIDToImageEmbedding: fileIDToImageEmbedding,
             clipPositiveTextVector: clipPositiveTextVector,
           );
-          final youAndThemMemory = PeopleMemory(
-            selectYouAndThemMemories,
+          final spotlightMemory = PeopleMemory(
+            selectSpotlightMemories,
             title,
             nowInMicroseconds,
             windowEnd,
-            PeopleMemoryType.youAndThem,
+            PeopleMemoryType.spotlight,
             personID,
           );
-          personToMemories.putIfAbsent(personID, () => {}).putIfAbsent(
-                PeopleMemoryType.youAndThem,
-                () => [youAndThemMemory],
-              );
+          personToMemories
+              .putIfAbsent(personID, () => {})
+              .putIfAbsent(PeopleMemoryType.spotlight, () => [spotlightMemory]);
         }
-        w?.log('youAndThem setup');
-      }
+        w?.log('spotlight setup');
 
-      // Inside people loop, check for doingSomethingTogether
-      if (isMeAssigned && meID != personID) {
-        final vectors = _getEmbeddingsForFileIDs(
-          fileIDToImageEmbedding,
-          personFileIDs,
-        );
-        w?.log('getting clip vectors for doingSomethingTogether');
-        final activityFiles = <EnteFile>[];
-        for (final activity in PeopleActivity.values) {
-          activityFiles.clear();
-          final Vector? activityVector = clipPeopleActivityVectors[activity];
-          if (activityVector == null) {
-            dev.log("No vector for activity $activity");
-            continue;
-          }
-          final Map<int, double> similarities = {};
-          for (final embedding in vectors) {
-            similarities[embedding.fileID] =
-                embedding.vector.dot(activityVector);
-          }
-          w?.log(
-            'comparing embeddings for doingSomethingTogether and $activity',
-          );
+        // Inside people loop, check for youAndThem
+        if (isMeAssigned && meID != personID) {
+          final youAndThemFiles = <EnteFile>[];
           for (final fileID in personFileIDs) {
-            final similarity = similarities[fileID];
-            if (similarity == null) continue;
-            if (similarity > _clipActivityQueryThreshold) {
-              final file = allFileIdsToFile[fileID];
-              if (file != null) {
-                activityFiles.add(file);
-              }
+            final bool mePresent = meFileIDs!.contains(fileID);
+            final personFaces = fileIdToFaces[fileID] ?? [];
+            if (!mePresent || personFaces.length != 2) continue;
+            final file = allFileIdsToFile[fileID];
+            if (file != null) {
+              youAndThemFiles.add(file);
             }
           }
-          if (activityFiles.length > 5) {
-            final String title = activityTitle(activity, personName);
-            final selectActivityMemories = await _bestSelectionPeople(
-              activityFiles.map((f) => Memory.fromFile(f, seenTimes)).toList(),
+          if (youAndThemFiles.length > 5) {
+            final String title = "You and $personName";
+            final selectYouAndThemMemories = await _bestSelectionPeople(
+              youAndThemFiles
+                  .map((f) => Memory.fromFile(f, seenTimes))
+                  .toList(),
               fileIDToImageEmbedding: fileIDToImageEmbedding,
               clipPositiveTextVector: clipPositiveTextVector,
             );
-            final activityMemory = PeopleMemory(
-              selectActivityMemories,
+            final youAndThemMemory = PeopleMemory(
+              selectYouAndThemMemories,
               title,
               nowInMicroseconds,
               windowEnd,
-              PeopleMemoryType.doingSomethingTogether,
+              PeopleMemoryType.youAndThem,
               personID,
             );
-            personToMemories
-                .putIfAbsent(personID, () => {})
-                .putIfAbsent(
-                  PeopleMemoryType.doingSomethingTogether,
-                  () => [],
-                )
-                .add(activityMemory);
+            personToMemories.putIfAbsent(personID, () => {}).putIfAbsent(
+                  PeopleMemoryType.youAndThem,
+                  () => [youAndThemMemory],
+                );
           }
+          w?.log('youAndThem setup');
         }
 
-        w?.log('doingSomethingTogether setup');
-      }
-
-      // Inside people loop, check for lastTimeYouSawThem
-      final lastTimeYouSawThemFiles = <EnteFile>[];
-      int lastCreationTime = 0;
-      bool longAgo = true;
-      for (final fileID in personFileIDs) {
-        final file = allFileIdsToFile[fileID];
-        if (file != null && file.creationTime != null) {
-          final creationTime = file.creationTime!;
-          final creationDateTime =
-              DateTime.fromMicrosecondsSinceEpoch(creationTime);
-          if (currentTime.difference(creationDateTime).inDays < 365) {
-            longAgo = false;
-            break;
-          }
-          if (creationTime > lastCreationTime - microSecondsInDay) {
-            final lastDateTime =
-                DateTime.fromMicrosecondsSinceEpoch(lastCreationTime);
-            if (creationDateTime.difference(lastDateTime).inHours > 24) {
-              lastTimeYouSawThemFiles.clear();
+        // Inside people loop, check for doingSomethingTogether
+        if (isMeAssigned && meID != personID) {
+          final vectors = _getEmbeddingsForFileIDs(
+            fileIDToImageEmbedding,
+            personFileIDs,
+          );
+          w?.log('getting clip vectors for doingSomethingTogether');
+          final activityFiles = <EnteFile>[];
+          for (final activity in PeopleActivity.values) {
+            activityFiles.clear();
+            final Vector? activityVector = clipPeopleActivityVectors[activity];
+            if (activityVector == null) {
+              dev.log("No vector for activity $activity");
+              continue;
             }
-            if (creationTime > lastCreationTime) {
-              lastCreationTime = creationTime;
+            final Map<int, double> similarities = {};
+            for (final embedding in vectors) {
+              similarities[embedding.fileID] =
+                  embedding.vector.dot(activityVector);
             }
-            lastTimeYouSawThemFiles.add(file);
+            w?.log(
+              'comparing embeddings for doingSomethingTogether and $activity',
+            );
+            for (final fileID in personFileIDs) {
+              final similarity = similarities[fileID];
+              if (similarity == null) continue;
+              if (similarity > _clipActivityQueryThreshold) {
+                final file = allFileIdsToFile[fileID];
+                if (file != null) {
+                  activityFiles.add(file);
+                }
+              }
+            }
+            if (activityFiles.length > 5) {
+              final String title = activityTitle(activity, personName);
+              final selectActivityMemories = await _bestSelectionPeople(
+                activityFiles
+                    .map((f) => Memory.fromFile(f, seenTimes))
+                    .toList(),
+                fileIDToImageEmbedding: fileIDToImageEmbedding,
+                clipPositiveTextVector: clipPositiveTextVector,
+              );
+              final activityMemory = PeopleMemory(
+                selectActivityMemories,
+                title,
+                nowInMicroseconds,
+                windowEnd,
+                PeopleMemoryType.doingSomethingTogether,
+                personID,
+              );
+              personToMemories
+                  .putIfAbsent(personID, () => {})
+                  .putIfAbsent(
+                    PeopleMemoryType.doingSomethingTogether,
+                    () => [],
+                  )
+                  .add(activityMemory);
+            }
+          }
+
+          w?.log('doingSomethingTogether setup');
+        }
+
+        // Inside people loop, check for lastTimeYouSawThem
+        final lastTimeYouSawThemFiles = <EnteFile>[];
+        int lastCreationTime = 0;
+        bool longAgo = true;
+        for (final fileID in personFileIDs) {
+          final file = allFileIdsToFile[fileID];
+          if (file != null && file.creationTime != null) {
+            final creationTime = file.creationTime!;
+            final creationDateTime =
+                DateTime.fromMicrosecondsSinceEpoch(creationTime);
+            if (currentTime.difference(creationDateTime).inDays < 365) {
+              longAgo = false;
+              break;
+            }
+            if (creationTime > lastCreationTime - microSecondsInDay) {
+              final lastDateTime =
+                  DateTime.fromMicrosecondsSinceEpoch(lastCreationTime);
+              if (creationDateTime.difference(lastDateTime).inHours > 24) {
+                lastTimeYouSawThemFiles.clear();
+              }
+              if (creationTime > lastCreationTime) {
+                lastCreationTime = creationTime;
+              }
+              lastTimeYouSawThemFiles.add(file);
+            }
+          }
+        }
+        if (longAgo &&
+            lastTimeYouSawThemFiles.length >= 2 &&
+            meID != personID) {
+          final String title = "Last time with $personName";
+          final lastTimeMemory = PeopleMemory(
+            lastTimeYouSawThemFiles
+                .map((f) => Memory.fromFile(f, seenTimes))
+                .toList(),
+            title,
+            nowInMicroseconds,
+            windowEnd,
+            PeopleMemoryType.lastTimeYouSawThem,
+            personID,
+            lastCreationTime: lastCreationTime,
+          );
+          personToMemories.putIfAbsent(personID, () => {}).putIfAbsent(
+                PeopleMemoryType.lastTimeYouSawThem,
+                () => [lastTimeMemory],
+              );
+        }
+        w?.log('lastTimeYouSawThem setup');
+      }
+
+      // Surface everything just for debug checking
+      if (surfaceAll) {
+        for (final personID in personToMemories.keys) {
+          final personMemories = personToMemories[personID]!;
+          for (final memoryType in personMemories.keys) {
+            memoryResults.addAll(personMemories[memoryType]!);
+          }
+        }
+        return memoryResults;
+      }
+
+      // Loop through the people and check if we should surface anything based on relevancy (bday, last met)
+      for (final personID in orderedImportantPersonsID) {
+        final personMemories = personToMemories[personID];
+        if (personID == meID || personMemories == null) continue;
+        final person = personIdToPerson[personID]!;
+        // Check if we should surface memory based on birthday
+        final birthdate = DateTime.tryParse(person.data.birthDate ?? "");
+        if (birthdate != null) {
+          final thisBirthday =
+              DateTime(currentTime.year, birthdate.month, birthdate.day);
+          final daysTillBirthday = thisBirthday.difference(currentTime).inDays;
+          if (daysTillBirthday < 7 && daysTillBirthday >= 0) {
+            final personName = person.data.name;
+            final int newAge = currentTime.year - birthdate.year;
+            final spotlightMem =
+                personMemories[PeopleMemoryType.spotlight]?.first;
+            if (spotlightMem != null) {
+              final String firstTitle = "$personName turning $newAge!";
+              final String secondTitle = "$personName is $newAge!";
+              final thisBirthday = birthdate.copyWith(year: currentTime.year);
+              memoryResults.add(
+                spotlightMem.copyWith(
+                  title: firstTitle,
+                  firstDateToShow: thisBirthday
+                      .subtract(const Duration(days: 6))
+                      .microsecondsSinceEpoch,
+                  lastDateToShow: thisBirthday.microsecondsSinceEpoch,
+                ),
+              );
+              memoryResults.add(
+                spotlightMem.copyWith(
+                  title: secondTitle,
+                  firstDateToShow: thisBirthday.microsecondsSinceEpoch,
+                  lastDateToShow:
+                      thisBirthday.add(kDayItself).microsecondsSinceEpoch,
+                ),
+              );
+            }
+            final youAndThemMem =
+                personMemories[PeopleMemoryType.youAndThem]?.first;
+            if (youAndThemMem != null) {
+              memoryResults.add(
+                youAndThemMem.copyWith(
+                  firstDateToShow: thisBirthday
+                      .subtract(const Duration(days: 6))
+                      .microsecondsSinceEpoch,
+                  lastDateToShow:
+                      thisBirthday.add(kDayItself).microsecondsSinceEpoch,
+                ),
+              );
+            }
+            continue;
+          }
+        }
+
+        // Check if we should surface memory based on last met
+        final lastMetMemory =
+            personMemories[PeopleMemoryType.lastTimeYouSawThem]?.first;
+        if (lastMetMemory != null) {
+          final lastMetTime = DateTime.fromMicrosecondsSinceEpoch(
+            lastMetMemory.lastCreationTime!,
+          ).copyWith(year: currentTime.year);
+          final daysSinceLastMet = lastMetTime.difference(currentTime).inDays;
+          if (daysSinceLastMet < 7 && daysSinceLastMet >= 0) {
+            memoryResults.add(lastMetMemory);
           }
         }
       }
-      if (longAgo && lastTimeYouSawThemFiles.length >= 2 && meID != personID) {
-        final String title = "Last time with $personName";
-        final lastTimeMemory = PeopleMemory(
-          lastTimeYouSawThemFiles
-              .map((f) => Memory.fromFile(f, seenTimes))
-              .toList(),
-          title,
-          nowInMicroseconds,
-          windowEnd,
-          PeopleMemoryType.lastTimeYouSawThem,
-          personID,
-          lastCreationTime: lastCreationTime,
-        );
-        personToMemories.putIfAbsent(personID, () => {}).putIfAbsent(
-              PeopleMemoryType.lastTimeYouSawThem,
-              () => [lastTimeMemory],
-            );
-      }
-      w?.log('lastTimeYouSawThem setup');
-    }
+      w?.log('relevancy setup');
 
-    // Surface everything just for debug checking
-    if (surfaceAll) {
-      for (final personID in personToMemories.keys) {
-        final personMemories = personToMemories[personID]!;
-        for (final memoryType in personMemories.keys) {
-          memoryResults.addAll(personMemories[memoryType]!);
-        }
-      }
-      return memoryResults;
-    }
-
-    // Loop through the people and check if we should surface anything based on relevancy (bday, last met)
-    for (final personID in orderedImportantPersonsID) {
-      final personMemories = personToMemories[personID];
-      if (personID == meID || personMemories == null) continue;
-      final person = personIdToPerson[personID]!;
-      // Check if we should surface memory based on birthday
-      final birthdate = DateTime.tryParse(person.data.birthDate ?? "");
-      if (birthdate != null) {
-        final thisBirthday =
-            DateTime(currentTime.year, birthdate.month, birthdate.day);
-        final daysTillBirthday = thisBirthday.difference(currentTime).inDays;
-        if (daysTillBirthday < 7 && daysTillBirthday >= 0) {
-          final personName = person.data.name;
-          final int newAge = currentTime.year - birthdate.year;
-          final spotlightMem =
-              personMemories[PeopleMemoryType.spotlight]?.first;
-          if (spotlightMem != null) {
-            final String firstTitle = "$personName turning $newAge!";
-            final String secondTitle = "$personName is $newAge!";
-            final thisBirthday = birthdate.copyWith(year: currentTime.year);
-            memoryResults.add(
-              spotlightMem.copyWith(
-                title: firstTitle,
-                firstDateToShow: thisBirthday
-                    .subtract(const Duration(days: 6))
-                    .microsecondsSinceEpoch,
-                lastDateToShow: thisBirthday.microsecondsSinceEpoch,
-              ),
-            );
-            memoryResults.add(
-              spotlightMem.copyWith(
-                title: secondTitle,
-                firstDateToShow: thisBirthday.microsecondsSinceEpoch,
-                lastDateToShow:
-                    thisBirthday.add(kDayItself).microsecondsSinceEpoch,
-              ),
-            );
-          }
-          final youAndThemMem =
-              personMemories[PeopleMemoryType.youAndThem]?.first;
-          if (youAndThemMem != null) {
-            memoryResults.add(
-              youAndThemMem.copyWith(
-                firstDateToShow: thisBirthday
-                    .subtract(const Duration(days: 6))
-                    .microsecondsSinceEpoch,
-                lastDateToShow:
-                    thisBirthday.add(kDayItself).microsecondsSinceEpoch,
-              ),
-            );
-          }
-          continue;
-        }
-      }
-
-      // Check if we should surface memory based on last met
-      final lastMetMemory =
-          personMemories[PeopleMemoryType.lastTimeYouSawThem]?.first;
-      if (lastMetMemory != null) {
-        final lastMetTime = DateTime.fromMicrosecondsSinceEpoch(
-          lastMetMemory.lastCreationTime!,
-        ).copyWith(year: currentTime.year);
-        final daysSinceLastMet = lastMetTime.difference(currentTime).inDays;
-        if (daysSinceLastMet < 7 && daysSinceLastMet >= 0) {
-          memoryResults.add(lastMetMemory);
-        }
-      }
-    }
-    w?.log('relevancy setup');
-
-    // Loop through the people (and memory types) and add based on rotation
-    if (memoryResults.length >= 3) return memoryResults;
-    peopleRotationLoop:
-    for (final personID in orderedImportantPersonsID) {
-      for (final memory in memoryResults) {
-        if (memory.personID == personID) {
-          continue peopleRotationLoop;
-        }
-      }
-      for (final shownLog in shownPeople) {
-        if (shownLog.personID != personID) continue;
-        final shownDate =
-            DateTime.fromMicrosecondsSinceEpoch(shownLog.lastTimeShown);
-        final bool seenPersonRecently =
-            currentTime.difference(shownDate) < kPersonShowTimeout;
-        if (seenPersonRecently) continue peopleRotationLoop;
-      }
-      if (personToMemories[personID] == null) continue peopleRotationLoop;
-      int added = 0;
-      potentialMemoryLoop:
-      for (final memoriesForCategory in personToMemories[personID]!.values) {
-        PeopleMemory potentialMemory = memoriesForCategory.first;
-        if (memoriesForCategory.length > 1) {
-          if (potentialMemory.peopleMemoryType !=
-              PeopleMemoryType.doingSomethingTogether) {
-            dev.log(
-              'Something is going wrong, ${potentialMemory.peopleMemoryType} has multiple memories for same person',
-            );
-          } else {
-            final randIdx = Random().nextInt(potentialMemory.memories.length);
-            potentialMemory = memoriesForCategory[randIdx];
+      // Loop through the people (and memory types) and add based on rotation
+      if (memoryResults.length >= 3) return memoryResults;
+      peopleRotationLoop:
+      for (final personID in orderedImportantPersonsID) {
+        for (final memory in memoryResults) {
+          if (memory.personID == personID) {
+            continue peopleRotationLoop;
           }
         }
         for (final shownLog in shownPeople) {
           if (shownLog.personID != personID) continue;
-          if (shownLog.peopleMemoryType != potentialMemory.peopleMemoryType) {
-            continue;
-          }
-          final shownTypeDate =
+          final shownDate =
               DateTime.fromMicrosecondsSinceEpoch(shownLog.lastTimeShown);
-          final bool seenPersonTypeRecently =
-              currentTime.difference(shownTypeDate) < kPersonAndTypeShowTimeout;
-          if (seenPersonTypeRecently) continue potentialMemoryLoop;
+          final bool seenPersonRecently =
+              currentTime.difference(shownDate) < kPersonShowTimeout;
+          if (seenPersonRecently) continue peopleRotationLoop;
         }
-        memoryResults.add(potentialMemory);
-        added++;
-        if (added >= 2) break peopleRotationLoop;
+        if (personToMemories[personID] == null) continue peopleRotationLoop;
+        int added = 0;
+        potentialMemoryLoop:
+        for (final memoriesForCategory in personToMemories[personID]!.values) {
+          PeopleMemory potentialMemory = memoriesForCategory.first;
+          if (memoriesForCategory.length > 1) {
+            if (potentialMemory.peopleMemoryType !=
+                PeopleMemoryType.doingSomethingTogether) {
+              dev.log(
+                'Something is going wrong, ${potentialMemory.peopleMemoryType} has multiple memories for same person',
+              );
+            } else {
+              final randIdx = Random().nextInt(potentialMemory.memories.length);
+              potentialMemory = memoriesForCategory[randIdx];
+            }
+          }
+          for (final shownLog in shownPeople) {
+            if (shownLog.personID != personID) continue;
+            if (shownLog.peopleMemoryType != potentialMemory.peopleMemoryType) {
+              continue;
+            }
+            final shownTypeDate =
+                DateTime.fromMicrosecondsSinceEpoch(shownLog.lastTimeShown);
+            final bool seenPersonTypeRecently =
+                currentTime.difference(shownTypeDate) <
+                    kPersonAndTypeShowTimeout;
+            if (seenPersonTypeRecently) continue potentialMemoryLoop;
+          }
+          memoryResults.add(potentialMemory);
+          added++;
+          if (added >= 2) break peopleRotationLoop;
+        }
+        if (added > 0) break peopleRotationLoop;
       }
-      if (added > 0) break peopleRotationLoop;
-    }
-    w?.log('rotation setup');
+      w?.log('rotation setup');
 
-    return memoryResults;
+      return memoryResults;
+    } catch (e, s) {
+      Logger('PeopleResults').severe("Error in _getPeopleResults", e, s);
+      return [];
+    }
   }
 
   static Future<List<ClipMemory>> _getClipResults(
