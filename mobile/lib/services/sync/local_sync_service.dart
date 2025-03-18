@@ -7,8 +7,8 @@ import 'package:photo_manager/photo_manager.dart';
 import 'package:photos/core/configuration.dart';
 import "package:photos/core/errors.dart";
 import 'package:photos/core/event_bus.dart';
+import "package:photos/db/common/conflict_algo.dart";
 import 'package:photos/db/device_files_db.dart';
-import "package:photos/db/enum/conflict_algo.dart";
 import 'package:photos/db/file_updation_db.dart';
 import 'package:photos/db/files_db.dart';
 import 'package:photos/events/backup_folders_updated_event.dart';
@@ -296,10 +296,12 @@ class LocalSyncService {
         files,
         conflictAlgorithm: SqliteAsyncConflictAlgorithm.ignore,
       );
-      _logger.info('Inserted ${files.length} files');
-      Bus.instance.fire(
-        LocalPhotosUpdatedEvent(allFiles, source: "loadedPhoto"),
-      );
+      _logger.info('Inserted ${files.length} out of ${allFiles.length} files');
+      if (allFiles.isNotEmpty) {
+        Bus.instance.fire(
+          LocalPhotosUpdatedEvent(allFiles, source: "loadedPhoto"),
+        );
+      }
     }
     await _prefs.setInt(kDbUpdationTimeKey, toTime);
   }
