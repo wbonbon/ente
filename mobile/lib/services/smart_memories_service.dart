@@ -173,6 +173,7 @@ class SmartMemoriesService {
   ) async {
     try {
       final TimeLogger t = TimeLogger(context: "_allMemoriesCalculations");
+      final _logger = Logger("_allMemoriesCalculations");
       // Arguments: direct data
       final Set<EnteFile> allFiles = args["allFiles"];
       final Map<int, EnteFile> allFileIdsToFile = args["allFileIdsToFile"];
@@ -192,7 +193,7 @@ class SmartMemoriesService {
           args["clipPeopleActivityVectors"];
       final Map<ClipMemoryType, Vector> clipMemoryTypeVectors =
           args["clipMemoryTypeVectors"];
-      dev.log('All arguments (direct data) unwrapped $t');
+      _logger.info('All arguments (direct data) unwrapped $t');
 
       final Map<String, String> faceIDsToPersonID = {};
       for (final person in persons) {
@@ -206,8 +207,8 @@ class SmartMemoriesService {
       for (final embedding in allImageEmbeddings) {
         fileIDToImageEmbedding[embedding.fileID] = embedding;
       }
-      dev.log('arguments from indirect data calculated $t');
-      dev.log('starting actual memory calculations ${DateTime.now()}');
+      _logger.info('arguments from indirect data calculated $t');
+      _logger.info('starting actual memory calculations ${DateTime.now()}');
 
       final List<SmartMemory> memories = [];
 
@@ -226,9 +227,12 @@ class SmartMemoriesService {
         clipPositiveTextVector: clipPositiveTextVector,
         clipPeopleActivityVectors: clipPeopleActivityVectors,
       );
+      _logger.info(
+        'Found ${peopleMemories.length} people memories $peopleMemories $t',
+      );
       _deductUsedMemories(allFiles, peopleMemories);
       memories.addAll(peopleMemories);
-      dev.log("All files length after people: ${allFiles.length} $t");
+      _logger.info("All files length after people: ${allFiles.length} $t");
 
       // Trip memories
       final (tripMemories, bases) = await _getTripsResults(
@@ -245,7 +249,7 @@ class SmartMemoriesService {
       );
       _deductUsedMemories(allFiles, tripMemories);
       memories.addAll(tripMemories);
-      dev.log("All files length after trips: ${allFiles.length} $t");
+      _logger.info("All files length after trips: ${allFiles.length} $t");
 
       // Clip memories
       final clipMemories = await _getClipResults(
@@ -259,7 +263,8 @@ class SmartMemoriesService {
       );
       _deductUsedMemories(allFiles, clipMemories);
       memories.addAll(clipMemories);
-      dev.log("All files length after clip memories: ${allFiles.length} $t");
+      _logger
+          .info("All files length after clip memories: ${allFiles.length} $t");
 
       // Time memories
       final timeMemories = await _onThisDayOrWeekResults(
@@ -273,15 +278,15 @@ class SmartMemoriesService {
       );
       _deductUsedMemories(allFiles, timeMemories);
       memories.addAll(timeMemories);
-      dev.log("All files length after time: ${allFiles.length} $t");
+      _logger.info("All files length after time: ${allFiles.length} $t");
 
       // Filler memories
       final fillerMemories =
           await _getFillerResults(allFiles, now, seenTimes: seenTimes);
       _deductUsedMemories(allFiles, fillerMemories);
       memories.addAll(fillerMemories);
-      dev.log("All files length after filler: ${allFiles.length} $t");
-      dev.log('finished actual memory calculations ${DateTime.now()}');
+      _logger.info("All files length after filler: ${allFiles.length} $t");
+      _logger.info('finished actual memory calculations ${DateTime.now()}');
       return MemoriesResult(memories, bases);
     } catch (e, s) {
       Logger('allMemoriesCalculation').severe(
@@ -325,13 +330,14 @@ class SmartMemoriesService {
     required Vector clipPositiveTextVector,
     required Map<PeopleActivity, Vector> clipPeopleActivityVectors,
   }) async {
-    final w = (kDebugMode ? EnteWatch('getPeopleResults') : null)?..start();
+    final peopleLogger = Logger("PeopleResults");
+    // final w = (kDebugMode ? EnteWatch('getPeopleResults') : null)?..start();
     final List<PeopleMemory> memoryResults = [];
     if (allFiles.isEmpty) return [];
     final nowInMicroseconds = currentTime.microsecondsSinceEpoch;
     final windowEnd =
         currentTime.add(kMemoriesUpdateFrequency).microsecondsSinceEpoch;
-    w?.log('allFiles setup');
+    peopleLogger.info('allFiles setup');
 
     try {
       // Get ordered list of important people (all named, from most to least files)
@@ -362,7 +368,9 @@ class SmartMemoriesService {
         final bFaces = personIdToFaceIDs[b]!.length;
         return bFaces.compareTo(aFaces);
       });
-      w?.log('orderedImportantPersonsID setup');
+      peopleLogger.info(
+        'orderedImportantPersonsID setup, length: ${orderedImportantPersonsID.length}',
+      );
 
       // Check if the user has assignmed "me"
       String? meID;
@@ -375,6 +383,7 @@ class SmartMemoriesService {
       final bool isMeAssigned = meID != null;
       Set<int>? meFileIDs;
       if (isMeAssigned) meFileIDs = personIdToFileIDs[meID]!;
+      peopleLogger.info('meID setup, me assigned: $isMeAssigned, meID: $meID');
 
       // Loop through the people and find all memories
       final Map<String, Map<PeopleMemoryType, List<PeopleMemory>>>
@@ -382,10 +391,13 @@ class SmartMemoriesService {
       for (final personID in orderedImportantPersonsID) {
         final personFileIDs = personIdToFileIDs[personID]!;
         final personName = personIdToPerson[personID]!.data.name;
-        w?.log('start with new person $personName');
-        w?.log('personFilesToFaces setup');
+        peopleLogger.info('start with new person $personName');
+        peopleLogger.info('spotlight setup starting for $personName');
         // Inside people loop, check for spotlight (Most likely every person will have a spotlight)
         final spotlightFiles = <EnteFile>[];
+        peopleLogger.info(
+          'spotlightFiles search starting, looping through ${personFileIDs.length} personFileIDs',
+        );
         for (final fileID in personFileIDs) {
           final int personsPresent = fileIdToFaces[fileID]?.length ?? 10;
           if (personsPresent > 1) continue;
@@ -394,11 +406,15 @@ class SmartMemoriesService {
             spotlightFiles.add(file);
           }
         }
+        peopleLogger.info(
+          'spotlightFiles search done, found ${spotlightFiles.length} files',
+        );
         if (spotlightFiles.length > 5) {
           String title = "Spotlight on $personName";
           if (isMeAssigned && meID == personID) {
             title = "Spotlight on yourself";
           }
+          peopleLogger.info('good memory, finding the best selection of files');
           final selectSpotlightMemories = await _bestSelectionPeople(
             spotlightFiles.map((f) => Memory.fromFile(f, seenTimes)).toList(),
             fileIDToImageEmbedding: fileIDToImageEmbedding,
@@ -412,14 +428,17 @@ class SmartMemoriesService {
             PeopleMemoryType.spotlight,
             personID,
           );
+          peopleLogger
+              .info('spotlightMemory added: ${spotlightMemory.toString()}');
           personToMemories
               .putIfAbsent(personID, () => {})
               .putIfAbsent(PeopleMemoryType.spotlight, () => [spotlightMemory]);
         }
-        w?.log('spotlight setup');
+        peopleLogger.info('spotlight setup done for $personName');
 
         // Inside people loop, check for youAndThem
         if (isMeAssigned && meID != personID) {
+          peopleLogger.info('youAndThem setup starting for $personName');
           final youAndThemFiles = <EnteFile>[];
           for (final fileID in personFileIDs) {
             final bool mePresent = meFileIDs!.contains(fileID);
@@ -430,8 +449,13 @@ class SmartMemoriesService {
               youAndThemFiles.add(file);
             }
           }
+          peopleLogger.info(
+            'youAndThemFiles search done, found ${youAndThemFiles.length} files',
+          );
           if (youAndThemFiles.length > 5) {
             final String title = "You and $personName";
+            peopleLogger
+                .info('good memory, finding the best selection of files');
             final selectYouAndThemMemories = await _bestSelectionPeople(
               youAndThemFiles
                   .map((f) => Memory.fromFile(f, seenTimes))
@@ -447,12 +471,14 @@ class SmartMemoriesService {
               PeopleMemoryType.youAndThem,
               personID,
             );
+            peopleLogger
+                .info('youAndThemMemory added: ${youAndThemMemory.toString()}');
             personToMemories.putIfAbsent(personID, () => {}).putIfAbsent(
                   PeopleMemoryType.youAndThem,
                   () => [youAndThemMemory],
                 );
           }
-          w?.log('youAndThem setup');
+          peopleLogger.info('youAndThem setup done for $personName');
         }
 
         // Inside people loop, check for doingSomethingTogether
@@ -461,13 +487,14 @@ class SmartMemoriesService {
             fileIDToImageEmbedding,
             personFileIDs,
           );
-          w?.log('getting clip vectors for doingSomethingTogether');
+          peopleLogger
+              .info('doingSomethingTogether setup starting for $personName');
           final activityFiles = <EnteFile>[];
           for (final activity in PeopleActivity.values) {
             activityFiles.clear();
             final Vector? activityVector = clipPeopleActivityVectors[activity];
             if (activityVector == null) {
-              dev.log("No vector for activity $activity");
+              peopleLogger.info("No vector for activity $activity");
               continue;
             }
             final Map<int, double> similarities = {};
@@ -475,7 +502,7 @@ class SmartMemoriesService {
               similarities[embedding.fileID] =
                   embedding.vector.dot(activityVector);
             }
-            w?.log(
+            peopleLogger.info(
               'comparing embeddings for doingSomethingTogether and $activity',
             );
             for (final fileID in personFileIDs) {
@@ -488,8 +515,13 @@ class SmartMemoriesService {
                 }
               }
             }
+            peopleLogger.info(
+              'activityFiles for $activity found: ${activityFiles.length}',
+            );
             if (activityFiles.length > 5) {
               final String title = activityTitle(activity, personName);
+              peopleLogger
+                  .info('good memory, finding the best selection of files');
               final selectActivityMemories = await _bestSelectionPeople(
                 activityFiles
                     .map((f) => Memory.fromFile(f, seenTimes))
@@ -505,6 +537,9 @@ class SmartMemoriesService {
                 PeopleMemoryType.doingSomethingTogether,
                 personID,
               );
+              peopleLogger.info(
+                'activityMemory added: ${activityMemory.toString()}',
+              );
               personToMemories
                   .putIfAbsent(personID, () => {})
                   .putIfAbsent(
@@ -515,13 +550,15 @@ class SmartMemoriesService {
             }
           }
 
-          w?.log('doingSomethingTogether setup');
+          peopleLogger
+              .info('doingSomethingTogether setup done for $personName');
         }
 
         // Inside people loop, check for lastTimeYouSawThem
         final lastTimeYouSawThemFiles = <EnteFile>[];
         int lastCreationTime = 0;
         bool longAgo = true;
+        peopleLogger.info('lastTimeYouSawThem setup starting for $personName');
         for (final fileID in personFileIDs) {
           final file = allFileIdsToFile[fileID];
           if (file != null && file.creationTime != null) {
@@ -545,6 +582,9 @@ class SmartMemoriesService {
             }
           }
         }
+        peopleLogger.info(
+          'lastTimeYouSawThemFiles search done, found ${lastTimeYouSawThemFiles.length} files',
+        );
         if (longAgo &&
             lastTimeYouSawThemFiles.length >= 2 &&
             meID != personID) {
@@ -560,12 +600,27 @@ class SmartMemoriesService {
             personID,
             lastCreationTime: lastCreationTime,
           );
+          peopleLogger
+              .info('lastTimeMemory added: ${lastTimeMemory.toString()}');
           personToMemories.putIfAbsent(personID, () => {}).putIfAbsent(
                 PeopleMemoryType.lastTimeYouSawThem,
                 () => [lastTimeMemory],
               );
         }
-        w?.log('lastTimeYouSawThem setup');
+        peopleLogger.info('lastTimeYouSawThem setup');
+      }
+
+      peopleLogger.info(
+        'all people memories setup done, logging al found memories: ${personToMemories.length} ${personToMemories.toString()}',
+      );
+      for (final personID in personToMemories.keys) {
+        final personMemories = personToMemories[personID]!;
+        for (final memoryType in personMemories.keys) {
+          memoryResults.addAll(personMemories[memoryType]!);
+          peopleLogger.info(
+            'added memories for person $personID, memoryType $memoryType, memory: ${personMemories[memoryType]!.toString()}',
+          );
+        }
       }
 
       // Surface everything just for debug checking
@@ -647,41 +702,61 @@ class SmartMemoriesService {
           }
         }
       }
-      w?.log('relevancy setup');
+      peopleLogger.info('relevancy setup done');
 
       // Loop through the people (and memory types) and add based on rotation
+      peopleLogger.info('rotation setup starting');
       if (memoryResults.length >= 3) return memoryResults;
       peopleRotationLoop:
       for (final personID in orderedImportantPersonsID) {
+        peopleLogger.info('rotation checking for $personID');
         for (final memory in memoryResults) {
           if (memory.personID == personID) {
+            peopleLogger.info('person $personID already in results');
             continue peopleRotationLoop;
           }
         }
+        peopleLogger.info('shownPeople: ${shownPeople.toString()}');
         for (final shownLog in shownPeople) {
           if (shownLog.personID != personID) continue;
           final shownDate =
               DateTime.fromMicrosecondsSinceEpoch(shownLog.lastTimeShown);
           final bool seenPersonRecently =
               currentTime.difference(shownDate) < kPersonShowTimeout;
-          if (seenPersonRecently) continue peopleRotationLoop;
+          if (seenPersonRecently) {
+            peopleLogger
+                .info('person $personID seen recently, not showing memory');
+            continue peopleRotationLoop;
+          }
         }
-        if (personToMemories[personID] == null) continue peopleRotationLoop;
+        peopleLogger
+            .info('personToMemories[personID]: ${personToMemories[personID]}');
+        if (personToMemories[personID] == null) {
+          peopleLogger.info('no memories found for $personID');
+          continue peopleRotationLoop;
+        }
         int added = 0;
+        peopleLogger.info('starting potential memory loop for $personID');
         potentialMemoryLoop:
         for (final memoriesForCategory in personToMemories[personID]!.values) {
           PeopleMemory potentialMemory = memoriesForCategory.first;
+          peopleLogger.info(
+            'potentialMemory: ${potentialMemory.toString()}',
+          );
           if (memoriesForCategory.length > 1) {
             if (potentialMemory.peopleMemoryType !=
                 PeopleMemoryType.doingSomethingTogether) {
-              dev.log(
-                'Something is going wrong, ${potentialMemory.peopleMemoryType} has multiple memories for same person',
+              peopleLogger.severe(
+                'Something is going wrong, ${potentialMemory.peopleMemoryType} has multiple memories for same person, namely $memoriesForCategory',
               );
             } else {
               final randIdx = Random().nextInt(potentialMemory.memories.length);
               potentialMemory = memoriesForCategory[randIdx];
             }
           }
+          peopleLogger.info(
+            'potentialMemory: ${potentialMemory.toString()}',
+          );
           for (final shownLog in shownPeople) {
             if (shownLog.personID != personID) continue;
             if (shownLog.peopleMemoryType != potentialMemory.peopleMemoryType) {
@@ -692,15 +767,29 @@ class SmartMemoriesService {
             final bool seenPersonTypeRecently =
                 currentTime.difference(shownTypeDate) <
                     kPersonAndTypeShowTimeout;
-            if (seenPersonTypeRecently) continue potentialMemoryLoop;
+            if (seenPersonTypeRecently) {
+              peopleLogger.info(
+                'person $personID seen recently for type ${shownLog.peopleMemoryType} in ${shownLog.toString()}, not showing memory',
+              );
+              continue potentialMemoryLoop;
+            }
           }
           memoryResults.add(potentialMemory);
+          peopleLogger.info(
+            'potentialMemory added: ${potentialMemory.toString()}',
+          );
           added++;
-          if (added >= 2) break peopleRotationLoop;
+          if (added >= 2) {
+            peopleLogger.info('added 2 memories for $personID, breaking loop');
+            break peopleRotationLoop;
+          }
         }
-        if (added > 0) break peopleRotationLoop;
+        if (added > 0) {
+          peopleLogger.info('added memories for $personID, breaking loop');
+          break peopleRotationLoop;
+        }
       }
-      w?.log('rotation setup');
+      peopleLogger.info('rotation setup done, returning $memoryResults');
 
       return memoryResults;
     } catch (e, s) {
@@ -1024,7 +1113,6 @@ class SmartMemoriesService {
             lastCreationTime:
                 max(otherTrip.lastCreationTime!, trip.lastCreationTime!),
           );
-          dev.log('Merged two trip locations');
           merged = true;
           break;
         }
@@ -1610,10 +1698,15 @@ class SmartMemoriesService {
     required Vector clipPositiveTextVector,
   }) async {
     try {
-      final w = (kDebugMode ? EnteWatch('getPeopleResults') : null)?..start();
+      final peopleLogger = Logger("PeopleResults");
+      peopleLogger.info('Starting people memories best selection');
       final fileCount = memories.length;
       final int targetSize = prefferedSize ?? 10;
-      if (fileCount <= targetSize) return memories;
+      if (fileCount <= targetSize) {
+        peopleLogger
+            .info('Returning all memories since there are only $fileCount');
+        return memories;
+      }
 
       // Sort by time
       final sortedTimeMemories = <Memory>[];
@@ -1625,7 +1718,12 @@ class SmartMemoriesService {
       sortedTimeMemories.sort(
         (a, b) => a.file.creationTime!.compareTo(b.file.creationTime!),
       );
-      if (sortedTimeMemories.length < targetSize) return sortedTimeMemories;
+      if (sortedTimeMemories.length < targetSize) {
+        peopleLogger.info(
+          'Returning all memories since during time sort there are only ${sortedTimeMemories.length} memories',
+        );
+        return sortedTimeMemories;
+      }
 
       // Divide into 10 time buckets distributing all memories as evenly as possible.
       final int total = sortedTimeMemories.length;
@@ -1634,24 +1732,35 @@ class SmartMemoriesService {
       final int remainder = total % numBuckets;
       final List<List<Memory>> timeBuckets = [];
       int offset = 0;
+      peopleLogger
+          .info('start dividing memories into $numBuckets time buckets');
       for (int i = 0; i < numBuckets; i++) {
         final int bucketSize = quotient + (i < remainder ? 1 : 0);
+        peopleLogger.info('bucket $i has $bucketSize memories');
         timeBuckets
             .add(sortedTimeMemories.sublist(offset, offset + bucketSize));
         offset += bucketSize;
       }
 
       final finalSelection = <Memory>[];
+      peopleLogger
+          .info('start selecting most nostalgic memories in each timebucket');
       for (final bucket in timeBuckets) {
         // Get X% most nostalgic photos
         final bucketFileIDs =
-            bucket.map((memory) => memory.file.uploadedFileID!).toSet().toSet();
+            bucket.map((memory) => memory.file.uploadedFileID!).toSet();
         final bucketVectors = _getEmbeddingsForFileIDs(
           fileIDToImageEmbedding,
           bucketFileIDs,
         );
+        peopleLogger.info(
+          'bucket of length ${bucket.length} has ${bucketVectors.length} embeddings',
+        );
         final bool littleEmbeddings =
             bucketVectors.length < bucket.length * 0.5;
+        peopleLogger.info(
+          'littleEmbeddings: $littleEmbeddings',
+        );
         final Map<int, double> nostalgiaScores = {};
         for (final embedding in bucketVectors) {
           nostalgiaScores[embedding.fileID] =
@@ -1670,14 +1779,19 @@ class SmartMemoriesService {
               .take((max(bucket.length * 0.3, 1)).toInt())
               .toList();
         }
+        peopleLogger.info(
+          'bucket has ${mostNostalgic.length} most nostalgic memories',
+        );
 
         if (mostNostalgic.isEmpty) {
-          dev.log('No nostalgic photos in bucket');
+          peopleLogger.info('No nostalgic photos in bucket');
         }
 
         // If no selection yet, take the most nostalgic photo
         if (finalSelection.isEmpty) {
           finalSelection.add(mostNostalgic.first);
+          peopleLogger
+              .info('First nostalgic photo added since no selection yet');
           continue;
         }
 
@@ -1702,20 +1816,26 @@ class SmartMemoriesService {
             farthestDistanceIdx = i;
           }
         }
+        peopleLogger.info(
+          'Adding farthest distance photo to selection with distance $globalMaxMinDistance. This is index $farthestDistanceIdx out of ${mostNostalgic.length}, which corresponds to ${mostNostalgic[farthestDistanceIdx]}',
+        );
         finalSelection.add(mostNostalgic[farthestDistanceIdx]);
       }
 
+      peopleLogger.info(
+        'sorting final selection of size ${finalSelection.length} by time',
+      );
       finalSelection
           .sort((a, b) => b.file.creationTime!.compareTo(a.file.creationTime!));
 
-      dev.log(
+      peopleLogger.info(
         'People memories selection done, returning ${finalSelection.length} memories',
       );
-      w?.log('People memories selection done');
+      peopleLogger.info('People memories selection done');
       return finalSelection;
     } catch (e, s) {
-      dev.log('Error in _bestSelectionPeople $e \n $s');
-      return [];
+      Logger("PeopleResults").severe('Error in _bestSelectionPeople $e \n $s');
+      rethrow;
     }
   }
 
