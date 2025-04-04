@@ -247,7 +247,7 @@ SPEC CHECKSUMS:
   flutter_local_authentication: 989278c681612f1ee0e36019e149137f114b9d7f
   flutter_local_notifications: ad39620c743ea4c15127860f4b5641649a988100
   flutter_native_splash: 35ddbc7228eafcb3969dcc5f1fbbe27c1145a4f0
-  flutter_secure_storage: 1ed9476fba7e7a782b22888f956cce43e2c62f13
+  flutter_secure_storage: 2c2ff13db9e0a5647389bff88b0ecac56e3f3418
   fluttertoast: 76fea30fcf04176325f6864c87306927bd7d2038
   local_auth_darwin: 553ce4f9b16d3fdfeafce9cf042e7c9f77c1c391
   move_to_background: 155f7bfbd34d43ad847cb630d2d2d87c17199710
