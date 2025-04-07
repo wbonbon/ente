@@ -1,4 +1,5 @@
 import "dart:convert";
+import "dart:io";
 import "dart:typed_data";
 
 import "package:ente_auth/core/configuration.dart";
@@ -25,7 +26,9 @@ class LockScreenSettings {
   static const keyHasMigratedLockScreenChanges =
       "ls_has_migrated_lock_screen_changes";
   static const keyShowOfflineModeWarning = "ls_show_offline_mode_warning";
-  static const String kIsLightMode = "is_light_mode";
+  static const kIsLightMode = "is_light_mode";
+  static const clearLsKeysOnFirstLaunchComplete =
+      "clear_ls_keys_on_first_launch_complete";
 
   final List<Duration> autoLockDurations = const [
     Duration(milliseconds: 650),
@@ -43,12 +46,28 @@ class LockScreenSettings {
     _secureStorage = const FlutterSecureStorage();
     _preferences = await SharedPreferences.getInstance();
 
+    await clearLsKeysOnFirstLaunch();
+
     ///Workaround for privacyScreen not working when app is killed and opened.
     await setHideAppContent(getShouldHideAppContent());
 
     /// Function to Check if the migration for lock screen changes has
     /// already been done by checking a stored boolean value.
     await runLockScreenChangesMigration();
+  }
+
+  // On iOS (and maybe macOS too, haven't checked), values stored using
+  // FlutterSecureStorage are not deleted when the app is uninstalled without
+  // logging out. These values persist on the device and are used if the app is
+  // reinstalled. So we're clearing these values.
+  // if present on first launch.
+  Future<void> clearLsKeysOnFirstLaunch() async {
+    if (Platform.isIOS || Platform.isMacOS) {
+      if (_preferences.getBool(clearLsKeysOnFirstLaunchComplete) == null) {
+        await removePinAndPassword();
+        await _preferences.setBool(clearLsKeysOnFirstLaunchComplete, true);
+      }
+    }
   }
 
   Future<void> setOfflineModeWarningStatus(bool value) async {
