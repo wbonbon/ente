@@ -1253,8 +1253,14 @@ class MLDataDB with SqlDbBase implements IMLDataDB<int> {
     _logger.info("Total count of clip embeddings: $totalCount");
 
     _logger.info("First time referencing ClipVectorDB in migration");
+    // TODO: lau: Remove this artificial delay later
+    _logger.info("Referencing ClipVectorDB in 500ms");
+    await Future.delayed(const Duration(milliseconds: 500));
     final clipVectorDB = ClipVectorDB.instance;
     _logger.info("ClipVectorDB referenced");
+    // TODO: lau: Remove this artificial delay later
+    _logger.info("Using ClipVectorDB to delete all embeddings in 500ms");
+    await Future.delayed(const Duration(milliseconds: 500));
     await clipVectorDB.deleteAllEmbeddings();
     _logger.info("ClipVectorDB all embeddings cleared");
 
@@ -1302,6 +1308,9 @@ class MLDataDB with SqlDbBase implements IMLDataDB<int> {
           "Got ${fileIDs.length} valid embeddings, $weirdCount weird embeddings",
         );
 
+        // TODO: lau: Remove this artificial delay later
+        _logger.info("Using ClipVectorDB to bulk insert embeddings in 500ms");
+        await Future.delayed(const Duration(milliseconds: 500));
         await ClipVectorDB.instance
             .bulkInsertEmbeddings(fileIDs: fileIDs, embeddings: embeddings);
         _logger.info("Inserted ${fileIDs.length} embeddings to ClipVectorDB");
@@ -1373,9 +1382,15 @@ class MLDataDB with SqlDbBase implements IMLDataDB<int> {
         _getRowFromEmbedding(embeddings.first),
       );
       if (flagService.enableVectorDb) {
+        // TODO: lau: Remove this artificial delay later
+        _logger.info("Using ClipVectorDB to insert embedding in 500ms");
+        await Future.delayed(const Duration(milliseconds: 500));
         await ClipVectorDB.instance.insertEmbedding(
           fileID: embeddings.first.fileID,
           embedding: embeddings.first.embedding,
+        );
+        _logger.info(
+          "Inserted embedding for fileID ${embeddings.first.fileID} to ClipVectorDB",
         );
       }
     } else {
@@ -1385,10 +1400,16 @@ class MLDataDB with SqlDbBase implements IMLDataDB<int> {
         inputs,
       );
       if (flagService.enableVectorDb) {
+        // TODO: lau: Remove this artificial delay later
+        _logger.info("Using ClipVectorDB to bulk insert embedding in 500ms");
+        await Future.delayed(const Duration(milliseconds: 500));
         await ClipVectorDB.instance.bulkInsertEmbeddings(
           fileIDs: embeddings.map((e) => e.fileID).toList(),
           embeddings:
               embeddings.map((e) => Float32List.fromList(e.embedding)).toList(),
+        );
+        _logger.info(
+          "Inserted ${embeddings.length} embeddings to ClipVectorDB",
         );
       }
     }
@@ -1402,7 +1423,13 @@ class MLDataDB with SqlDbBase implements IMLDataDB<int> {
       'DELETE FROM $clipTable WHERE $fileIDColumn IN (${fileIDs.join(", ")})',
     );
     if (flagService.enableVectorDb) {
+      // TODO: lau: Remove this artificial delay later
+      _logger.info("Using ClipVectorDB to delete certain embeddings in 500ms");
+      await Future.delayed(const Duration(milliseconds: 500));
       await ClipVectorDB.instance.deleteEmbeddings(fileIDs);
+      _logger.info(
+        "Deleted ${fileIDs.length} embeddings from ClipVectorDB",
+      );
     }
     Bus.instance.fire(EmbeddingUpdatedEvent());
   }
@@ -1412,7 +1439,11 @@ class MLDataDB with SqlDbBase implements IMLDataDB<int> {
     final db = await instance.asyncDB;
     await db.execute('DELETE FROM $clipTable');
     if (flagService.enableVectorDb) {
+      // TODO: lau: Remove this artificial delay later
+      _logger.info("Using ClipVectorDB to delete all embeddings in 500ms");
+      await Future.delayed(const Duration(milliseconds: 500));
       await ClipVectorDB.instance.deleteAllEmbeddings();
+      _logger.info("All embeddings deleted from ClipVectorDB");
     }
     Bus.instance.fire(EmbeddingUpdatedEvent());
   }

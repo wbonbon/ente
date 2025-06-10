@@ -274,6 +274,9 @@ class SemanticSearchService {
     }
     late final Map<String, List<QueryResult>> queryResults;
     if (flagService.enableVectorDb) {
+      // TODO: lau: Remove this artificial delay later
+      _logger.info("Using ClipVectorDB for similarity computation in 500ms");
+      await Future.delayed(const Duration(milliseconds: 500));
       queryResults = await ClipVectorDB.instance.computeBulkSimilarities(
         textQueryToEmbeddingMap,
         minimumSimilarityMap,
