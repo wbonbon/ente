@@ -899,7 +899,7 @@
   "authToViewYourMemories": "Por favor, autentique-se para ver suas memórias",
   "unlock": "Desbloquear",
   "freeUpSpace": "Libertar espaço",
-  "freeUpSpaceSaving": "{count, plural, =1 {Pode eliminá-lo do aparelho para esvaziar {formattedSize}} other {Pode eliminá-los do aparelho para esvaziar {formattedSize}}}",
+  "freeUpSpaceSaving": "{count, plural, one {}=1 {Pode eliminá-lo do aparelho para esvaziar {formattedSize}} other {Pode eliminá-los do aparelho para esvaziar {formattedSize}}}",
   "filesBackedUpInAlbum": "{count, plural, one {1 arquivo} other {{formattedNumber} arquivos}} neste álbum teve um backup seguro",
   "@filesBackedUpInAlbum": {
     "description": "Text to tell user how many files have been backed up in the album",
@@ -1755,7 +1755,6 @@
   "birthdayNotifications": "Notificações de felicidades",
   "receiveRemindersOnBirthdays": "Obtém lembretes de quando é aniversário de alguém. Apertar na notificação o levará às fotos do aniversariante.",
   "happyBirthday": "Felicidades! 🥳",
-  "happyBirthdayToPerson": "Felicidades para {name}! 🎉",
   "birthdays": "Aniversários",
-  "wishThemAHappyBirthday": "Wish ${name} a happy birthday! 🎉"
+  "wishThemAHappyBirthday": "Envie um \"Felicidades\" a {name}! 🎉"
 }
